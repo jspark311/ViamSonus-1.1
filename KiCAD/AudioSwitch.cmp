@@ -1,0 +1,87 @@
+Cmp-Mod V01 Created by CvPcb (2013-may-18)-stable date = Mon May  5 23:21:47 2014
+
+BeginCmp
+TimeStamp = /5368682A;
+Reference = C1;
+ValeurCmp = 10uF;
+IdModule  = c_0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5368680C;
+Reference = C2;
+ValeurCmp = 100nF;
+IdModule  = c_0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5368681B;
+Reference = C3;
+ValeurCmp = 1uF;
+IdModule  = c_0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5368684F;
+Reference = C4;
+ValeurCmp = 10nF;
+IdModule  = c_0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /535888BC;
+Reference = P1;
+ValeurCmp = CONN_12;
+IdModule  = SIL-12;
+EndCmp
+
+BeginCmp
+TimeStamp = /535888CB;
+Reference = P2;
+ValeurCmp = CONN_12;
+IdModule  = SIL-12;
+EndCmp
+
+BeginCmp
+TimeStamp = /5368767B;
+Reference = P3;
+ValeurCmp = CONN_2X2;
+IdModule  = SIL-4;
+EndCmp
+
+BeginCmp
+TimeStamp = /53687378;
+Reference = R1;
+ValeurCmp = 10000;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5368738A;
+Reference = R2;
+ValeurCmp = 10000;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /53588868;
+Reference = U1;
+ValeurCmp = ISL23345;
+IdModule  = QFP20-6x4;
+EndCmp
+
+BeginCmp
+TimeStamp = /53588859;
+Reference = U2;
+ValeurCmp = ADG2128;
+IdModule  = QFN32;
+EndCmp
+
+BeginCmp
+TimeStamp = /53588877;
+Reference = U3;
+ValeurCmp = ISL23345;
+IdModule  = QFP20-6x4;
+EndCmp
+
+EndListe

@@ -1,0 +1,32 @@
+eeschema (2013-may-18)-stable  >> Creation date: Tue May  6 01:11:37 2014
+#Cmp ( order = Reference )
+| C1         10uF        ; ~           
+| C2         100nF       ; ~           
+| C3         1uF         ; ~           
+| C4         10nF        ; ~           
+| P1         CONN_12     ;             
+| P2         CONN_12     ;             
+| P3         CONN_2X2    ;             
+| R1         10000       ; ~           
+| R2         10000       ; ~           
+| U1         ISL23345    ; ~           
+| U2         ADG2128     ; ~           
+| U3         ISL23345    ; ~           
+#End Cmp
+
+#Cmp ( order = Value )
+| 10nF         C4        ; ~           
+| 100nF        C2        ; ~           
+| 1uF          C3        ; ~           
+| 10uF         C1        ; ~           
+| CONN_12      P1        ;             
+| CONN_12      P2        ;             
+| CONN_2X2     P3        ;             
+| 10000        R1        ; ~           
+| 10000        R2        ; ~           
+| ISL23345     U1        ; ~           
+| ADG2128      U2        ; ~           
+| ISL23345     U3        ; ~           
+#End Cmp
+
+#End List
