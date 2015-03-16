@@ -33,7 +33,7 @@ make repairs to your Arduino environment (if you haven't already) [as described 
 
 Then, you will need to (move, copy, or link) the folders in the Drivers directory to the ManuvrOS/Drivers directory...
 
-    cd Drivers
+    cd src/Drivers
     ln -S * <your teensy3.1 library path>/ManuvrOS/Drivers/
 
 Open up the sketch and it ought to compile for you.
