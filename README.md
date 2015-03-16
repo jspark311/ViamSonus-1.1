@@ -23,6 +23,7 @@ Viam Sonus *("Sound Route")* is an IoT audio multiplexer implemented on top of a
 ####Building the device firmware in the Arduino IDE
 
 This project has ManuvrOS as a dependency. You will first need to add it to your arduino libraries:
+
     git clone https://github.com/Manuvr/ManuvrOS
     cd ManuvrOS*
     mv ManuvrOS StringBuilder DataStructures <your teensy3.1 library path>
@@ -31,6 +32,7 @@ Because this project relies on libraries being includable by other libraries, yo
 make repairs to your Arduino environment (if you haven't already) [as described here](http://www.joshianlindsay.com/index.php?id=147). But trust me: this will make your life *much* easier.
 
 Then, you will need to (move, copy, or link) the folders in the Drivers directory to the ManuvrOS/Drivers directory...
+
     cd Drivers
     ln -S * <your teensy3.1 library path>/ManuvrOS/Drivers/
 
