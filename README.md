@@ -36,6 +36,8 @@ Then, you will need to (move, copy, or link) the folders in the Drivers director
     cd src/Drivers
     ln -S * <your teensy3.1 library path>/ManuvrOS/Drivers/
 
+You will also need the [Teensy3 enhanced i2c library](https://github.com/nox771/i2c_t3). Ultimately, this needs to be fixed in ManuvrOS:
+
 Open up the sketch and it ought to compile for you.
 
 
