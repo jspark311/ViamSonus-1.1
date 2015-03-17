@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "StaticHub/StaticHub.h"
 #include "ManuvrOS/Drivers/i2c-adapter/i2c-adapter.h"
 #include <ManuvrOS/EventManager.h>
+#include <ManuvrOS/XenoSession/XenoSession.h>
 
 #include <sys/time.h>
 #include <unistd.h>
@@ -51,6 +52,7 @@ uint32_t profiler_mark_1 = 0;
 Encoder* encoder_stack = NULL;;
 
 
+extern XenoSession *sess;
 
 
   
@@ -112,8 +114,6 @@ const MessageTypeDef message_defs[] = {
   {  VIAM_SONUS_MSG_UNGROUP_CHANNELS      , 0x0000,               "UNGROUP_CHANNELS",      ManuvrMsg::MSG_ARGS_NONE }, // Pass a group ID to free the channels it contains, or no args to ungroup everything.
   {  VIAM_SONUS_MSG_ENCODER_UP            , 0x0000,               "ENCODER_UP",            ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was incremented.
   {  VIAM_SONUS_MSG_ENCODER_DOWN          , 0x0000,               "ENCODER_DOWN",          ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was decremented.
-  {  VIAM_SONUS_MSG_USER_BUTTON_PRESS     , 0x0000,               "USER_BUTTON_PRESS",     ManuvrMsg::MSG_ARGS_U8 },   // The user pushed a button with the given integer code.
-  {  VIAM_SONUS_MSG_USER_BUTTON_RELEASE   , 0x0000,               "USER_BUTTON_RELEASE",   ManuvrMsg::MSG_ARGS_U8 },   // The user released a button with the given integer code.
   {  VIAM_SONUS_MSG_NEOPIXEL_REFRESH      , MSG_FLAG_IDEMPOTENT,  "NEOPIXEL_REFRESH",      ManuvrMsg::MSG_ARGS_NONE }, // Something wrote to the neopixel "frame buffer".
   {  VIAM_SONUS_MSG_AMBIENT_LIGHT_LEVEL   , MSG_FLAG_IDEMPOTENT,  "AMBIENT_LIGHT_LEVEL",   ManuvrMsg::MSG_ARGS_U16 }, // Something wrote to the neopixel "frame buffer".
   {  VIAM_SONUS_MSG_ADC_SCAN              , MSG_FLAG_IDEMPOTENT,  "ADC_SCAN",              ManuvrMsg::MSG_ARGS_NONE }, // It is time to scan the ADC channels.
@@ -398,7 +398,7 @@ void scan_buttons() {
     ManuvrEvent* event = EventManager::returnEvent((current_encoder_read > 0) ? VIAM_SONUS_MSG_ENCODER_UP : VIAM_SONUS_MSG_ENCODER_DOWN);
     EventManager::staticRaiseEvent(event);
     StringBuilder local_log;
-    local_log.concat("Encoder changed.\n");
+    local_log.concatf("Encoder changed. %lu\n", current_encoder_read);
     StaticHub::log(&local_log);
   }
   
@@ -409,7 +409,7 @@ void scan_buttons() {
     }
     else if (last_touch_read[i]*2 < current_touch_read[i]) {
       // BIG rise
-      ManuvrEvent* event = EventManager::returnEvent(VIAM_SONUS_MSG_USER_BUTTON_PRESS);
+      ManuvrEvent* event = EventManager::returnEvent(MANUVR_MSG_USER_BUTTON_PRESS);
       event->addArg((uint8_t) i);
       EventManager::staticRaiseEvent(event);
       StringBuilder local_log;
@@ -418,7 +418,7 @@ void scan_buttons() {
     }
     else if (current_touch_read[i]*2 < last_touch_read[i]) {
       // BIG fall
-      ManuvrEvent* event = EventManager::returnEvent(VIAM_SONUS_MSG_USER_BUTTON_RELEASE);
+      ManuvrEvent* event = EventManager::returnEvent(MANUVR_MSG_USER_BUTTON_RELEASE);
       event->addArg((uint8_t) i);
       EventManager::staticRaiseEvent(event);
       StringBuilder local_log;
@@ -702,8 +702,20 @@ int8_t StaticHub::notify(ManuvrEvent *active_event) {
       maskable_interrupts(false);
       jumpToBootloader();
       break;
+    case MANUVR_MSG_SESS_ORIGINATE_MSG:
+      {
+        if (NULL != sess) {
+          StringBuilder temp_sb;
+          int mess_len = sess->nextMessage(&temp_sb);
+          if (mess_len > 0) {
+            Serial.write(temp_sb.string(), temp_sb.length());
+          }
+        }
+        
+      }
+      break;
       
-    case VIAM_SONUS_MSG_USER_BUTTON_PRESS:
+    case MANUVR_MSG_USER_BUTTON_PRESS:
       if (active_event->argCount() > 0) {
         uint8_t button;
         if (0 == active_event->getArgAs(&button)) {

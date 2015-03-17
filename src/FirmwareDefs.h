@@ -53,8 +53,6 @@ This is one of the files that the application author is required to provide. Thi
 
   #define VIAM_SONUS_MSG_ENCODER_UP            0x9010 // 
   #define VIAM_SONUS_MSG_ENCODER_DOWN          0x9011 // 
-  #define VIAM_SONUS_MSG_USER_BUTTON_PRESS     0x9012 // 
-  #define VIAM_SONUS_MSG_USER_BUTTON_RELEASE   0x9013 // 
   #define VIAM_SONUS_MSG_NEOPIXEL_REFRESH      0x9020 // 
   #define VIAM_SONUS_MSG_AMBIENT_LIGHT_LEVEL   0x9030 // 
   #define VIAM_SONUS_MSG_ADC_SCAN              0x9040 // 

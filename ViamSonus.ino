@@ -22,7 +22,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "StaticHub/StaticHub.h"
 #include "Drivers/AudioRouter/AudioRouter.h"
+#include "ManuvrOS/XenoSession/XenoSession.h"
 #include <Encoder.h>   // Bleh.... more Arduino brain-damage...
+
+#include <Adafruit_GFX.h>
 
 #define HOST_BAUD_RATE  115200
 
@@ -37,6 +40,8 @@ StaticHub* sh;
 
 Scheduler*    scheduler     = NULL;
 EventManager* event_manager = NULL;
+
+XenoSession *sess = NULL;
 
 uint8_t analog_write_val = 0;
 int8_t direction = 1;   // Zero for hold, 1 for brighten, -1 for darken.
@@ -74,7 +79,6 @@ void setup() {
   //analogReadRes(BEST_ADC_PRECISION);  // All ADC channels shall be 10-bit.
   analogReadAveraging(32);            // And maximally-smoothed by the hardware (32).
 
-  //sh.bootstrap();
   sh = StaticHub::getInstance();
   
   scheduler     = sh->fetchScheduler();
@@ -83,6 +87,10 @@ void setup() {
   scheduler->createSchedule(40,  -1, false, logo_fade);
 
   timer0.begin(timerCallbackScheduler, 1000);   // Turn on the periodic interrupts...
+  
+  sess = new XenoSession();
+  sess->markSessionConnected(true);
+  
   sei();      // Enable interrupts and let the madness begin.
 }
 
@@ -91,10 +99,10 @@ void setup() {
 
 
 void loop() {
-  Serial.println("Booting....");
+  unsigned char* ser_buffer = (unsigned char*) alloca(255);
+  int bytes_read = 0;
   //StaticHub::watchdog_mark = 42;  // The period (in ms) of our clock punch. 
   
-  char c = '\0';
 
   while (1) {   // Service this loop for-ev-ar
     while (Serial.available() < 1) {
@@ -102,8 +110,16 @@ void loop() {
       scheduler->serviceScheduledEvents();
     }
 
-    c = Serial.read();
-    sh->feedUSBBuffer((uint8_t*) &c, 1, (c == '\r' || c == '\n'));
+    // Zero the buffer.
+    bytes_read = 0;
+    for (int i = 0; i < 255; i++) *(ser_buffer+i) = 0;
+    
+    while (Serial.available()) {
+      *(ser_buffer+bytes_read++) = Serial.read();
+    }
+    
+//    sh->feedUSBBuffer((uint8_t*) &c, 1, (c == '\r' || c == '\n'));
+    sess->bin_stream_rx(ser_buffer, bytes_read);
   }
 }
 
