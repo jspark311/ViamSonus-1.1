@@ -103,7 +103,6 @@ class AudioRouter : public EventReceiver {
 
     
     /* Overrides from EventReceiver */
-    int8_t bootComplete();
     void printDebug(StringBuilder*);
     const char* getReceiverName();
     int8_t notify(ManuvrEvent*);
@@ -123,6 +122,10 @@ class AudioRouter : public EventReceiver {
     static constexpr const int8_t AUDIO_ROUTER_ERROR_BAD_COLUMN      = -3;   // Column was out-of-bounds.
     static constexpr const int8_t AUDIO_ROUTER_ERROR_BAD_ROW         = -4;   // Row was out-of-bounds.
 
+    
+  protected:
+    int8_t bootComplete();
+    
     
   private:
     uint8_t i2c_addr_dp_lo;

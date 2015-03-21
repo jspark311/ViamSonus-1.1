@@ -22,10 +22,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "StaticHub/StaticHub.h"
 #include "Drivers/AudioRouter/AudioRouter.h"
-#include "ManuvrOS/XenoSession/XenoSession.h"
+//#include "ManuvrOS/XenoSession/XenoSession.h"
 #include <Encoder.h>   // Bleh.... more Arduino brain-damage...
 
-#include <Adafruit_GFX.h>
+//#include <Adafruit_GFX.h>
 
 #define HOST_BAUD_RATE  115200
 
@@ -37,11 +37,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 IntervalTimer timer0;               // Scheduler
 StaticHub* sh;
-
 Scheduler*    scheduler     = NULL;
 EventManager* event_manager = NULL;
+//XenoSession *sess = NULL;
 
-XenoSession *sess = NULL;
 
 uint8_t analog_write_val = 0;
 int8_t direction = 1;   // Zero for hold, 1 for brighten, -1 for darken.
@@ -54,7 +53,7 @@ void logo_fade() {
   if (0 == analog_write_val) {
     direction = direction * -1;
   }
-  else if (255 == analog_write_val) {
+  else if (200 == analog_write_val) {
     direction = direction * -1;
   }
   analogWrite(4, analog_write_val);
@@ -88,8 +87,8 @@ void setup() {
 
   timer0.begin(timerCallbackScheduler, 1000);   // Turn on the periodic interrupts...
   
-  sess = new XenoSession();
-  sess->markSessionConnected(true);
+//  sess = new XenoSession();
+//  sess->markSessionConnected(true);
   
   sei();      // Enable interrupts and let the madness begin.
 }
@@ -117,9 +116,10 @@ void loop() {
     while (Serial.available()) {
       *(ser_buffer+bytes_read++) = Serial.read();
     }
+    Serial.println("ALIVE");
     
 //    sh->feedUSBBuffer((uint8_t*) &c, 1, (c == '\r' || c == '\n'));
-    sess->bin_stream_rx(ser_buffer, bytes_read);
+//    sess->bin_stream_rx(ser_buffer, bytes_read);
   }
 }
 

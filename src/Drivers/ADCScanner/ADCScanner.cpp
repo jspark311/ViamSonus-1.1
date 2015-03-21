@@ -5,6 +5,7 @@
 #endif
 
 ADCScanner::ADCScanner() {
+  __class_initializer();
   for (int i = 0; i < 16; i++) {
     adc_list[i] = -1;
     last_sample[i] = 0;
@@ -85,6 +86,22 @@ int8_t ADCScanner::scan() {
 * These are overrides from EventReceiver interface...
 ****************************************************************************************************/
 
+
+/**
+* Some peripherals and operations need a bit of time to complete. This function is called from a
+*   one-shot schedule and performs all of the cleanup for latent consequences of bootstrap().
+*
+* @return 0 on no action, 1 on action, -1 on failure.
+*/
+int8_t ADCScanner::bootComplete() {
+  EventReceiver::bootComplete();
+  
+  ManuvrEvent *event = new ManuvrEvent(VIAM_SONUS_MSG_ADC_SCAN);
+  pid_adc_check = scheduler->createSchedule(50, -1, false, this, event);
+  return 1;
+}
+
+
 /**
 * Debug support function.
 *
@@ -105,21 +122,6 @@ void ADCScanner::printDebug(StringBuilder *output) {
   output->concat("\n");
 }
 
-
-
-/**
-* Some peripherals and operations need a bit of time to complete. This function is called from a
-*   one-shot schedule and performs all of the cleanup for latent consequences of bootstrap().
-*
-* @return non-zero if action was taken. Zero otherwise.
-*/
-int8_t ADCScanner::bootComplete() {
-  Scheduler *scheduler = StaticHub::getInstance()->fetchScheduler();
-  
-  ManuvrEvent *event = new ManuvrEvent(VIAM_SONUS_MSG_ADC_SCAN);
-  pid_adc_check = scheduler->createSchedule(50, -1, false, this, event);
-  return 1;
-}
 
 
 /**

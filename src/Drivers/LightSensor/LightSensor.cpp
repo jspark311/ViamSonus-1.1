@@ -5,6 +5,7 @@ uint8_t  last_lux_bin  = 0;
 
 
 LightSensor::LightSensor() {
+  __class_initializer();
 }
 
 
@@ -46,6 +47,20 @@ void light_check() {
 ****************************************************************************************************/
 
 /**
+* There is a NULL-check performed upstream for the scheduler member. So no need 
+*   to do it again here.
+*
+* @return 0 on no action, 1 on action, -1 on failure.
+*/
+int8_t LightSensor::bootComplete() {
+  EventReceiver::bootComplete();
+
+  pid_light_level_check = scheduler->createSchedule(501, -1, false, light_check);
+  return 1;
+}
+
+
+/**
 * Debug support function.
 *
 * @return a pointer to a string constant.
@@ -66,18 +81,6 @@ void LightSensor::printDebug(StringBuilder *output) {
 }
 
 
-
-/**
-* Some peripherals and operations need a bit of time to complete. This function is called from a
-*   one-shot schedule and performs all of the cleanup for latent consequences of bootstrap().
-*
-* @return non-zero if action was taken. Zero otherwise.
-*/
-int8_t LightSensor::bootComplete() {
-  Scheduler *scheduler = StaticHub::getInstance()->fetchScheduler();
-  pid_light_level_check = scheduler->createSchedule(501, -1, false, light_check);
-  return 1;
-}
 
 
 /**
@@ -116,10 +119,6 @@ int8_t LightSensor::notify(ManuvrEvent *active_event) {
   StringBuilder *temp_sb;
   
   switch (active_event->event_code) {
-    case VIAM_SONUS_MSG_UNGROUP_CHANNELS:
-      local_log.concat("Was passed an event that we should be handling, but are not yet:\n");
-      active_event->printDebug(&local_log);
-      break;
 
     default:
       return_value += EventReceiver::notify(active_event);

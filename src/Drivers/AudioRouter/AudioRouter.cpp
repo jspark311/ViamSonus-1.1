@@ -39,6 +39,7 @@ const uint8_t AudioRouter::col_remap[8] = {0x03, 0x02, 0x01, 0x00, 0x07, 0x06, 0
 * Constructor. Here is all of the setup work. Takes the i2c addresses of the hardware as arguments.
 */
 AudioRouter::AudioRouter(I2CAdapter* i2c, uint8_t cp_addr, uint8_t dp_lo_addr, uint8_t dp_hi_addr) {
+  __class_initializer();
   i2c_addr_cp_switch = cp_addr;
   i2c_addr_dp_lo = dp_lo_addr;
   i2c_addr_dp_hi = dp_hi_addr;
@@ -385,6 +386,18 @@ int8_t AudioRouter::status(StringBuilder* output) {
 ****************************************************************************************************/
 
 /**
+* There is a NULL-check performed upstream for the scheduler member. So no need 
+*   to do it again here.
+*
+* @return 0 on no action, 1 on action, -1 on failure.
+*/
+int8_t AudioRouter::bootComplete() {
+  EventReceiver::bootComplete();
+  return 0;
+}
+
+
+/**
 * Debug support function.
 *
 * @return a pointer to a string constant.
@@ -413,17 +426,6 @@ void AudioRouter::printDebug(StringBuilder *output) {
   output->concat("\n");
 }
 
-
-
-/**
-* Some peripherals and operations need a bit of time to complete. This function is called from a
-*   one-shot schedule and performs all of the cleanup for latent consequences of bootstrap().
-*
-* @return non-zero if action was taken. Zero otherwise.
-*/
-int8_t AudioRouter::bootComplete() {
-  return 0;
-}
 
 
 /**

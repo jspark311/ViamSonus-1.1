@@ -52,7 +52,7 @@ uint32_t profiler_mark_1 = 0;
 Encoder* encoder_stack = NULL;;
 
 
-extern XenoSession *sess;
+//extern XenoSession *sess;
 
 
   
@@ -100,7 +100,7 @@ bool StaticHub::mute_logger = false;
 
 
 // These are only here until they are migrated to each receiver that deals with them.
-const MessageTypeDef message_defs[] = {
+const MessageTypeDef message_defs_viam_sonus[] = {
   {  VIAM_SONUS_MSG_ENABLE_ROUTING        , 0x0000,               "ENABLE_ROUTING",        ManuvrMsg::MSG_ARGS_NONE }, //
   {  VIAM_SONUS_MSG_DISABLE_ROUTING       , 0x0000,               "DISABLE_ROUTING",       ManuvrMsg::MSG_ARGS_NONE }, // 
   {  VIAM_SONUS_MSG_NAME_INPUT_CHAN       , 0x0000,               "NAME_INPUT_CHAN",       ManuvrMsg::MSG_ARGS_NONE }, //
@@ -508,7 +508,16 @@ ADCScanner*  adc_scanner  = NULL;
 */
 int8_t StaticHub::bootstrap() {
   log_buffer.concatf("\n\n%s v%s    Build date: %s %s\nBootstrap beginning...\n", IDENTITY_STRING, VERSION_STRING, __DATE__, __TIME__);
+  scheduler = &__scheduler;
   
+  // One of the first things we need to do is populate the EventManager with all of the
+  // message codes that come with this firmware.
+  int mes_count = sizeof(message_defs_viam_sonus) / sizeof(MessageTypeDef);
+  for (int i = 0; i < mes_count; i++) {
+    ManuvrMsg::message_defs_extended.insert(&message_defs_viam_sonus[i]);
+    printf("Adding %s\n", message_defs_viam_sonus[i].debug_label);
+  }
+
   event_manager.subscribe((EventReceiver*) &__scheduler);    // Subscribe the Scheduler.
   event_manager.subscribe((EventReceiver*) this);            // Subscribe StaticHub as top priority in EventManager.
   
@@ -581,9 +590,7 @@ StaticHub* StaticHub::getInstance() {
 
 StaticHub::StaticHub() {
   StaticHub::INSTANCE = this;
-  for (MessageTypeDef mes_type : message_defs) {
-    ManuvrMsg::message_defs_extended.insert(&mes_type);
-  }
+  scheduler = &__scheduler;
 
   encoder_stack = new Encoder(2, 3);
 }
@@ -701,18 +708,6 @@ int8_t StaticHub::notify(ManuvrEvent *active_event) {
     case MANUVR_MSG_SYS_BOOTLOADER:
       maskable_interrupts(false);
       jumpToBootloader();
-      break;
-    case MANUVR_MSG_SESS_ORIGINATE_MSG:
-      {
-        if (NULL != sess) {
-          StringBuilder temp_sb;
-          int mess_len = sess->nextMessage(&temp_sb);
-          if (mess_len > 0) {
-            Serial.write(temp_sb.string(), temp_sb.length());
-          }
-        }
-        
-      }
       break;
       
     case MANUVR_MSG_USER_BUTTON_PRESS:
@@ -1179,13 +1174,6 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
       input->cull(1);
       ((I2CAdapter*) i2c)->procDirectDebugInstruction(input);
 	    break;
-    case 'm':
-      input->cull(1);
-      break;
-    case 'l':
-      input->cull(1);
-      break;
-
     default:
       break;
   }

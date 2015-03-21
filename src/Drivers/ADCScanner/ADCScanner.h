@@ -16,11 +16,15 @@
       uint16_t getSample(int8_t idx);
       
       /* Overrides from EventReceiver */
-      int8_t bootComplete();
       void printDebug(StringBuilder*);
       const char* getReceiverName();
       int8_t notify(ManuvrEvent*);
       int8_t callback_proc(ManuvrEvent *);
+
+      
+    protected:
+      int8_t bootComplete();
+      
       
     private:
       uint32_t  pid_adc_check = 0;
