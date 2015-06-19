@@ -109,20 +109,16 @@ void loop() {
       scheduler->serviceScheduledEvents();
     }
 
-    if (Serial.available() > 0) {
-      Serial.read();
-    }
-    
     // Zero the buffer.
     bytes_read = 0;
     for (int i = 0; i < 255; i++) *(ser_buffer+i) = 0;
-    
-//    while (Serial.available()) {
-//      *(ser_buffer+bytes_read++) = Serial.read();
-//    }
-//    Serial.println("ALIVE");
+    char c;
+    while (Serial.available()) {
+      c = Serial.read();
+      *(ser_buffer+bytes_read++) = c;
+    }
 
-//    sh->feedUSBBuffer((uint8_t*) &c, 1, (c == '\r' || c == '\n'));
+    sh->feedUSBBuffer(ser_buffer, bytes_read, (c == '\r' || c == '\n'));
 //    sess->bin_stream_rx(ser_buffer, bytes_read);
   }
 }

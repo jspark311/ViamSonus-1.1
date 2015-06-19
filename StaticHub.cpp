@@ -533,10 +533,10 @@ int8_t StaticHub::bootstrap() {
   const uint8_t SWITCH_ADDR = 0x76;
   const uint8_t POT_0_ADDR  = 0x50;
   const uint8_t POT_1_ADDR  = 0x51;
-//  audio_router = new AudioRouter((I2CAdapter*) i2c, SWITCH_ADDR, POT_0_ADDR, POT_1_ADDR); 
+  audio_router = new AudioRouter((I2CAdapter*) i2c, SWITCH_ADDR, POT_0_ADDR, POT_1_ADDR); 
 
   strip = new ManuvrableNeoPixel(80, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-//  light_sensor = new LightSensor();
+  light_sensor = new LightSensor();
   adc_scanner = new ADCScanner();
   
   adc_scanner->addADCPin(A10);
@@ -551,8 +551,8 @@ int8_t StaticHub::bootstrap() {
   adc_scanner->addADCPin(A20);
   
   event_manager.subscribe((EventReceiver*) strip);
-  //event_manager.subscribe((EventReceiver*) audio_router);
-  //event_manager.subscribe((EventReceiver*) light_sensor);
+  event_manager.subscribe((EventReceiver*) audio_router);
+  event_manager.subscribe((EventReceiver*) light_sensor);
   event_manager.subscribe((EventReceiver*) adc_scanner);
 
   initSchedules();   // We know we will need some schedules...
