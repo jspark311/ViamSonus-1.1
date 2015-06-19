@@ -508,26 +508,24 @@ ADCScanner*  adc_scanner  = NULL;
 */
 int8_t StaticHub::bootstrap() {
   log_buffer.concatf("\n\n%s v%s    Build date: %s %s\nBootstrap beginning...\n", IDENTITY_STRING, VERSION_STRING, __DATE__, __TIME__);
-  scheduler = &__scheduler;
+  
+  encoder_stack = new Encoder(2, 3);
   
   // One of the first things we need to do is populate the EventManager with all of the
   // message codes that come with this firmware.
   int mes_count = sizeof(message_defs_viam_sonus) / sizeof(MessageTypeDef);
   for (int i = 0; i < mes_count; i++) {
     ManuvrMsg::message_defs_extended.insert(&message_defs_viam_sonus[i]);
-    printf("Adding %s\n", message_defs_viam_sonus[i].debug_label);
+//    log_buffer.concatf("Adding %s\n", message_defs_viam_sonus[i].debug_label);
   }
 
-  event_manager.subscribe((EventReceiver*) &__scheduler);    // Subscribe the Scheduler.
   event_manager.subscribe((EventReceiver*) this);            // Subscribe StaticHub as top priority in EventManager.
+  event_manager.subscribe((EventReceiver*) &__scheduler);    // Subscribe the Scheduler.
   
   /*
   If we are going to use 50MHz GPIO rates, we should probably also turn on the I/O
   compensation cell to reduce noise.
   */
-  this->gpioSetup();                                 // Setup the GPIO ports
-  this->initRTC();                                   // Instantiate timebase
-
   // Setup the first i2c adapter and Subscribe it to EventManager.
   i2c = new I2CAdapter(1);
   event_manager.subscribe((EventReceiver*) i2c);
@@ -535,10 +533,10 @@ int8_t StaticHub::bootstrap() {
   const uint8_t SWITCH_ADDR = 0x76;
   const uint8_t POT_0_ADDR  = 0x50;
   const uint8_t POT_1_ADDR  = 0x51;
-  audio_router = new AudioRouter((I2CAdapter*) i2c, SWITCH_ADDR, POT_0_ADDR, POT_1_ADDR); 
+//  audio_router = new AudioRouter((I2CAdapter*) i2c, SWITCH_ADDR, POT_0_ADDR, POT_1_ADDR); 
 
   strip = new ManuvrableNeoPixel(80, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-  light_sensor = new LightSensor();
+//  light_sensor = new LightSensor();
   adc_scanner = new ADCScanner();
   
   adc_scanner->addADCPin(A10);
@@ -553,17 +551,14 @@ int8_t StaticHub::bootstrap() {
   adc_scanner->addADCPin(A20);
   
   event_manager.subscribe((EventReceiver*) strip);
-  event_manager.subscribe((EventReceiver*) audio_router);
-  event_manager.subscribe((EventReceiver*) light_sensor);
+  //event_manager.subscribe((EventReceiver*) audio_router);
+  //event_manager.subscribe((EventReceiver*) light_sensor);
   event_manager.subscribe((EventReceiver*) adc_scanner);
 
-  
   initSchedules();   // We know we will need some schedules...
 
-  off_class_interrupts(true);  // Now configure interrupts, lift interrupt masks, and let the madness begin.
-  
   ManuvrEvent *boot_completed_ev = EventManager::returnEvent(MANUVR_MSG_SYS_BOOT_COMPLETED);
-  boot_completed_ev->priority = EVENT_PRIORITY_HIGHEST;
+  //boot_completed_ev->priority = EVENT_PRIORITY_HIGHEST;
   raiseEvent(boot_completed_ev);
   return 0;
 }
@@ -580,7 +575,6 @@ StaticHub* StaticHub::getInstance() {
 	  // TODO: remove last traces of this pattern.
 	  // This should never happen, but if it does, it will crash us for sure.
 		StaticHub::INSTANCE = new StaticHub();
-		((StaticHub*) StaticHub::INSTANCE)->bootstrap();
 	}
 	// And that is how the singleton do...
 	return (StaticHub*) StaticHub::INSTANCE;
@@ -591,8 +585,6 @@ StaticHub* StaticHub::getInstance() {
 StaticHub::StaticHub() {
   StaticHub::INSTANCE = this;
   scheduler = &__scheduler;
-
-  encoder_stack = new Encoder(2, 3);
 }
 
 

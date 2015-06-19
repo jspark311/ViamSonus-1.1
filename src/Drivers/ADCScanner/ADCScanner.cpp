@@ -6,6 +6,7 @@
 
 ADCScanner::ADCScanner() {
   __class_initializer();
+  pid_adc_check = 0;
   for (int i = 0; i < 16; i++) {
     adc_list[i] = -1;
     last_sample[i] = 0;

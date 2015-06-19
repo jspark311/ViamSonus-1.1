@@ -27,7 +27,7 @@
       
       
     private:
-      uint32_t  pid_adc_check = 0;
+      uint32_t  pid_adc_check;
       
       int8_t   adc_list[16];
       uint16_t last_sample[16];

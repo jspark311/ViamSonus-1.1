@@ -84,6 +84,7 @@ void setup() {
   event_manager = sh->fetchEventManager();
   
   scheduler->createSchedule(40,  -1, false, logo_fade);
+  sh->bootstrap();
 
   timer0.begin(timerCallbackScheduler, 1000);   // Turn on the periodic interrupts...
   
@@ -100,27 +101,29 @@ void setup() {
 void loop() {
   unsigned char* ser_buffer = (unsigned char*) alloca(255);
   int bytes_read = 0;
-  //StaticHub::watchdog_mark = 42;  // The period (in ms) of our clock punch. 
-  
 
   while (1) {   // Service this loop for-ev-ar
+  logo_fade();
     while (Serial.available() < 1) {
       event_manager->procIdleFlags();
       scheduler->serviceScheduledEvents();
     }
 
+    if (Serial.available() > 0) {
+      Serial.read();
+    }
+    
     // Zero the buffer.
     bytes_read = 0;
     for (int i = 0; i < 255; i++) *(ser_buffer+i) = 0;
     
-    while (Serial.available()) {
-      *(ser_buffer+bytes_read++) = Serial.read();
-    }
-    Serial.println("ALIVE");
-    
+//    while (Serial.available()) {
+//      *(ser_buffer+bytes_read++) = Serial.read();
+//    }
+//    Serial.println("ALIVE");
+
 //    sh->feedUSBBuffer((uint8_t*) &c, 1, (c == '\r' || c == '\n'));
 //    sess->bin_stream_rx(ser_buffer, bytes_read);
   }
 }
-
 

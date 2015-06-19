@@ -6,6 +6,7 @@ uint8_t  last_lux_bin  = 0;
 
 LightSensor::LightSensor() {
   __class_initializer();
+  pid_light_level_check = 0;
 }
 
 

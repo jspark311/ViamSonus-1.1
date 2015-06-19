@@ -20,6 +20,6 @@
 
   
     private:
-      uint32_t  pid_light_level_check = 0;
+      uint32_t  pid_light_level_check;
   };
 #endif

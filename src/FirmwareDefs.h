@@ -36,6 +36,7 @@ This is one of the files that the application author is required to provide. Thi
 #define HW_VERSION_STRING         "0"                    // Revision-0 hardwaare (engineering prototype).
 #define IDENTITY_STRING           "ViamSonus"            // Might also be a hash....
 #define EXTENDED_DETAIL_STRING    ""                     // Optional. User-defined.
+#define PROTOCOL_VERSION          0x00000001             // The protocol version we are using.
 
 
 /* AudioRouter functionality */
