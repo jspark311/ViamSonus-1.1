@@ -13,19 +13,20 @@ SHELL          = /bin/sh
 WHO_I_AM       = $(shell whoami)
 WHERE_I_AM     = $(shell pwd)
 HOME_DIRECTORY = /home/$(WHO_I_AM)
-
+ARDUINO_PATH   = $(HOME_DIRECTORY)/arduino
+TEENSY_PATH    = $(ARDUINO_PATH)/hardware/teensy/avr/
 
 
 # Variables for the firmware compilation...
 ###########################################################################
 FIRMWARE_NAME      = viamsonus
 
-TOOLCHAIN          = /home/ian/arduino/hardware/tools/arm
+TOOLCHAIN          = $(ARDUINO_PATH)/hardware/tools/arm
 C_CROSS            = $(TOOLCHAIN)/bin/arm-none-eabi-gcc
 CPP_CROSS          = $(TOOLCHAIN)/bin/arm-none-eabi-g++
 OBJCOPY            = $(TOOLCHAIN)/bin/arm-none-eabi-objcopy
 SZ_CROSS           = $(TOOLCHAIN)/bin/arm-none-eabi-size
-TEENSY_LOADER_PATH = /home/ian/arduino/hardware/tools/teensy_loader_cli
+TEENSY_LOADER_PATH = $(ARDUINO_PATH)/hardware/tools/teensy_loader_cli
 
 OUTPUT_PATH        = build
 
@@ -41,14 +42,11 @@ FORMAT             = ihex
 ###########################################################################
 # Source files, includes, and linker directives...
 ###########################################################################
-ARDUINO_PATH = /home/ian/arduino
-
 INCLUDES     = -iquote. -iquotesrc/ 
-INCLUDES    += -I./ -I$(ARDUINO_PATH)/hardware/teensy/avr/libraries -I$(ARDUINO_PATH)/libraries
-INCLUDES    += -I$(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3
+INCLUDES    += -I./ -I$(TEENSY_PATH)libraries -I$(ARDUINO_PATH)/libraries
+INCLUDES    += -I$(TEENSY_PATH)cores/teensy3
 
-
-LD_FILE     = $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/mk20dx256.ld
+LD_FILE     = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
 
 # Libraries to link
 LIBS = -lm -lstdc++ -larm_cortexM4l_math -lc
@@ -95,11 +93,9 @@ CFLAGS += $(CPP_FLAGS)
 # Source file definitions...
 ###########################################################################
 
-MANUVROS_SRCS = src/StringBuilder/*.cpp src/ManuvrOS/*.cpp src/ManuvrOS/XenoSession/*.cpp src/ManuvrOS/ManuvrMsg/*.cpp
+MANUVROS_SRCS = src/StringBuilder/*.cpp src/ManuvrOS/*.cpp src/ManuvrOS/XenoSession/*.cpp src/ManuvrOS/ManuvrMsg/*.cpp src/ManuvrOS/Transports/*.cpp
 SENSOR_SRCS   = src/ManuvrOS/Drivers/SensorWrapper/*.cpp 
 I2C_DRIVERS   = src/ManuvrOS/Drivers/i2c-adapter/*.cpp src/ManuvrOS/Drivers/DeviceWithRegisters/DeviceRegister.cpp src/ManuvrOS/Drivers/DeviceWithRegisters/DeviceWithRegisters.cpp
-
-GPS_COM_DRIVERS = src/ManuvrOS/Transports/*.cpp
 
 I2C_VIAM_SONUS_DRIVERS  =  $(I2C_DRIVERS) src/ManuvrOS/Drivers/ISL23345/*.cpp src/ManuvrOS/Drivers/ADG2128/*.cpp src/ManuvrOS/Drivers/AudioRouter/*.cpp 
 
@@ -125,47 +121,48 @@ all: lib $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
 lib:
 	mkdir -p $(OUTPUT_PATH)
-	$(CPP_CROSS) -c $(CFLAGS) $(ARDUINO_PATH)/hardware/teensy/avr/libraries/Time/DateStrings.cpp -o $(OUTPUT_PATH)/DateStrings.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(ARDUINO_PATH)/hardware/teensy/avr/libraries/Time/Time.cpp -o $(OUTPUT_PATH)/Time.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(ARDUINO_PATH)/hardware/teensy/avr/libraries/SPI/SPI.cpp -o $(OUTPUT_PATH)/SPI.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)libraries/Time/DateStrings.cpp -o $(OUTPUT_PATH)/DateStrings.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)libraries/Time/Time.cpp -o $(OUTPUT_PATH)/Time.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)libraries/SPI/SPI.cpp -o $(OUTPUT_PATH)/SPI.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)libraries/i2c_t3/i2c_t3.cpp -o $(OUTPUT_PATH)/SPI.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)libraries/Encoder/Encoder.cpp -o $(OUTPUT_PATH)/Encoder.cpp.o 
 	
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/usb_dev.c -o $(OUTPUT_PATH)/usb_dev.c.o
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/usb_seremu.c -o $(OUTPUT_PATH)/usb_seremu.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/keylayouts.c -o $(OUTPUT_PATH)/keylayouts.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/serial2.c -o $(OUTPUT_PATH)/serial2.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/analog.c -o $(OUTPUT_PATH)/analog.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/usb_serial.c -o $(OUTPUT_PATH)/usb_serial.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/usb_desc.c -o $(OUTPUT_PATH)/usb_desc.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/eeprom.c -o $(OUTPUT_PATH)/eeprom.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/usb_mem.c -o $(OUTPUT_PATH)/usb_mem.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/serial1.c -o $(OUTPUT_PATH)/serial1.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/math_helper.c -o $(OUTPUT_PATH)/math_helper.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/serial3.c -o $(OUTPUT_PATH)/serial3.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/pins_teensy.c -o $(OUTPUT_PATH)/pins_teensy.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/mk20dx128.c -o $(OUTPUT_PATH)/mk20dx128.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/touch.c -o $(OUTPUT_PATH)/touch.c.o 
-	$(C_CROSS)   -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/nonstd.c -o $(OUTPUT_PATH)/nonstd.c.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/Print.cpp -o $(OUTPUT_PATH)/Print.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/DMAChannel.cpp -o $(OUTPUT_PATH)/DMAChannel.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/yield.cpp -o $(OUTPUT_PATH)/yield.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/WString.cpp -o $(OUTPUT_PATH)/WString.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/WMath.cpp -o $(OUTPUT_PATH)/WMath.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/usb_inst.cpp -o $(OUTPUT_PATH)/usb_inst.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/Tone.cpp -o $(OUTPUT_PATH)/Tone.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/Stream.cpp -o $(OUTPUT_PATH)/Stream.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/avr_emulation.cpp -o $(OUTPUT_PATH)/avr_emulation.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/new.cpp -o $(OUTPUT_PATH)/new.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/HardwareSerial1.cpp -o $(OUTPUT_PATH)/HardwareSerial1.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/HardwareSerial2.cpp -o $(OUTPUT_PATH)/HardwareSerial2.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/HardwareSerial3.cpp -o $(OUTPUT_PATH)/HardwareSerial3.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/main.cpp -o $(OUTPUT_PATH)/main.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/IntervalTimer.cpp -o $(OUTPUT_PATH)/IntervalTimer.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/cores/teensy3/AudioStream.cpp -o $(OUTPUT_PATH)/AudioStream.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS)  $(ARDUINO_PATH)/hardware/teensy/avr/libraries/Encoder/Encoder.cpp -o $(OUTPUT_PATH)/Encoder.cpp.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/usb_dev.c -o $(OUTPUT_PATH)/usb_dev.c.o
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/usb_seremu.c -o $(OUTPUT_PATH)/usb_seremu.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/keylayouts.c -o $(OUTPUT_PATH)/keylayouts.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/serial2.c -o $(OUTPUT_PATH)/serial2.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/analog.c -o $(OUTPUT_PATH)/analog.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/usb_serial.c -o $(OUTPUT_PATH)/usb_serial.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/usb_desc.c -o $(OUTPUT_PATH)/usb_desc.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/eeprom.c -o $(OUTPUT_PATH)/eeprom.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/usb_mem.c -o $(OUTPUT_PATH)/usb_mem.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/serial1.c -o $(OUTPUT_PATH)/serial1.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/math_helper.c -o $(OUTPUT_PATH)/math_helper.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/serial3.c -o $(OUTPUT_PATH)/serial3.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/pins_teensy.c -o $(OUTPUT_PATH)/pins_teensy.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/mk20dx128.c -o $(OUTPUT_PATH)/mk20dx128.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/touch.c -o $(OUTPUT_PATH)/touch.c.o 
+	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/nonstd.c -o $(OUTPUT_PATH)/nonstd.c.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/Print.cpp -o $(OUTPUT_PATH)/Print.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/DMAChannel.cpp -o $(OUTPUT_PATH)/DMAChannel.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/yield.cpp -o $(OUTPUT_PATH)/yield.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/WString.cpp -o $(OUTPUT_PATH)/WString.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/WMath.cpp -o $(OUTPUT_PATH)/WMath.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/usb_inst.cpp -o $(OUTPUT_PATH)/usb_inst.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/Tone.cpp -o $(OUTPUT_PATH)/Tone.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/Stream.cpp -o $(OUTPUT_PATH)/Stream.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/avr_emulation.cpp -o $(OUTPUT_PATH)/avr_emulation.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/new.cpp -o $(OUTPUT_PATH)/new.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/HardwareSerial1.cpp -o $(OUTPUT_PATH)/HardwareSerial1.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/HardwareSerial2.cpp -o $(OUTPUT_PATH)/HardwareSerial2.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/HardwareSerial3.cpp -o $(OUTPUT_PATH)/HardwareSerial3.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/main.cpp -o $(OUTPUT_PATH)/main.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/IntervalTimer.cpp -o $(OUTPUT_PATH)/IntervalTimer.cpp.o 
+	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/AudioStream.cpp -o $(OUTPUT_PATH)/AudioStream.cpp.o 
 
 
 testbench:
-	g++ -static -g -o testbench src/tests/test-bench.cpp src/tests/StaticHub.cpp $(MANUVROS_SRCS) $(SENSOR_SRCS) $(I2C_DRIVERS) $(I2C_VIAM_SONUS_DRIVERS) $(GPS_COM_DRIVERS) -std=$(CPP_STANDARD) $(TARGET_WIDTH) -lstdc++ -lm -Isrc/ -DTEST_BENCH -D_GNU_SOURCE -O0
+	g++ -static -g -o testbench src/tests/test-bench.cpp src/tests/StaticHub.cpp $(MANUVROS_SRCS) $(SENSOR_SRCS) $(I2C_DRIVERS) $(I2C_VIAM_SONUS_DRIVERS) -std=$(CPP_STANDARD) $(TARGET_WIDTH) -lstdc++ -lm -Isrc/ -DTEST_BENCH -D_GNU_SOURCE -O0
 
 
 $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf:

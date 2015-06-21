@@ -20,25 +20,21 @@ Viam Sonus *("Sound Route")* is an IoT audio multiplexer implemented on top of a
 
 
 ----------------------
-####Building the device firmware in the Arduino IDE
+####Building the device firmware 
 
-This project has ManuvrOS as a dependency. You will first need to add it to your arduino libraries:
+I got sick of tracking the inconsistent behavior of the Arduino IDE, and so Viam Sonus was re-tooled to be buildable with a makefile against the Arduino libraries.
+
+This project has ManuvrOS as a dependency. You will first need to add to this project's source tree:
 
     git clone https://github.com/Manuvr/ManuvrOS
     cd ManuvrOS*
-    mv ManuvrOS StringBuilder DataStructures <your teensy3.1 library path>
+    mv ManuvrOS StringBuilder DataStructures ..
 
-Because this project relies on libraries being includable by other libraries, you will also have to 
-make repairs to your Arduino environment (if you haven't already) [as described here](http://www.joshianlindsay.com/index.php?id=147). But trust me: this will make your life *much* easier.
+You will also need the [Teensy3 enhanced i2c library](https://github.com/nox771/i2c_t3). Follow those installation proceedures to get better i2c support. Ultimately, this needs to be fixed in ManuvrOS.
 
-Then, you will need to (move, copy, or link) the folders in the Drivers directory to the ManuvrOS/Drivers directory...
+One last step. You will need the [teensy_loader_cli program](https://github.com/PaulStoffregen/teensy_loader_cli) program to flash the controller with the new build. Build it, and place the binary in a place you deem logical, and then update the Makefile to reflect your choice.
 
-    cd src/Drivers
-    ln -S * <your teensy3.1 library path>/ManuvrOS/Drivers/
-
-You will also need the [Teensy3 enhanced i2c library](https://github.com/nox771/i2c_t3). Ultimately, this needs to be fixed in ManuvrOS:
-
-Open up the sketch and it ought to compile for you.
+The Makefile might need to be changed to reflect the location of your Arduino environment location.
 
 
 ----------------------
