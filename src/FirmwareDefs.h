@@ -13,17 +13,6 @@ This is one of the files that the application author is required to provide. Thi
 #define __FIRMWARE_DEFS_H
 
 /*
-* Macros we will use in scattered places...
-*/
-#ifndef max
-    #define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
-#endif
-
-#ifndef min
-    #define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
-#endif
-
-/*
 * These are required fields.
 *
 * PROTOCOL_MTU is required for constraining communication length due to memory restrictions at

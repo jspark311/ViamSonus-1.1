@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "StaticHub/StaticHub.h"
 #include "Drivers/AudioRouter/AudioRouter.h"
 //#include "ManuvrOS/XenoSession/XenoSession.h"
-#include <Encoder.h>   // Bleh.... more Arduino brain-damage...
 
 //#include <Adafruit_GFX.h>
 
