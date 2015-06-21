@@ -55,10 +55,13 @@ float t_timex = 10;
 ****************************************************************************************************/
 
 IntervalTimer timer0;               // Scheduler
-StaticHub* sh;
+StaticHub*    sh            = NULL;
 Scheduler*    scheduler     = NULL;
 EventManager* event_manager = NULL;
 //XenoSession *sess = NULL;
+
+
+
 
 
 uint8_t analog_write_val = 0;
@@ -94,27 +97,25 @@ void setup() {
   
   pinMode(14, INPUT);
 
-  AudioMemory(4);
+  AudioMemory(2);
   
   //analogReadRes(BEST_ADC_PRECISION);  // All ADC channels shall be 10-bit.
   analogReadAveraging(32);            // And maximally-smoothed by the hardware (32).
-  
   analogWriteResolution(12);   // Setup the DAC.
 
   sh = StaticHub::getInstance();
-  
+  sh->bootstrap();
+
   scheduler     = sh->fetchScheduler();
   event_manager = sh->fetchEventManager();
   
   scheduler->createSchedule(40,  -1, false, logo_fade);
-  sh->bootstrap();
 
   timer0.begin(timerCallbackScheduler, 1000);   // Turn on the periodic interrupts...
   
 //  sess = new XenoSession();
 //  sess->markSessionConnected(true);
-  
-  sei();      // Enable interrupts and let the madness begin.
+  sei();
 }
 
 
@@ -126,17 +127,16 @@ void loop() {
   int bytes_read = 0;
 
   while (1) {   // Service this loop for-ev-ar
-  logo_fade();
     while (Serial.available() < 1) {
       event_manager->procIdleFlags();
       scheduler->serviceScheduledEvents();
 	  
-	  if(! myEffect.isPlaying()) {
-		myEffect.play(t_ampx,t_hix,t_lox,t_timex);
-		int temp_x = t_hix;
-		t_hix = t_lox;
-		t_lox = temp_x;
-	  }
+      if(! myEffect.isPlaying()) {
+        myEffect.play(t_ampx,t_hix,t_lox,t_timex);
+        int temp_x = t_hix;
+        t_hix = t_lox;
+        t_lox = temp_x;
+      }
     }
 
     // Zero the buffer.

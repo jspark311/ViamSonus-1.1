@@ -20,7 +20,7 @@ void light_check() {
   if (max(current_lux_bin, last_lux_bin) - min(current_lux_bin, last_lux_bin) > 3) {
     last_lux_bin = current_lux_bin;
 
-    ManuvrEvent* event = EventManager::returnEvent(VIAM_SONUS_MSG_AMBIENT_LIGHT_LEVEL);
+    ManuvrEvent* event = EventManager::returnEvent(MANUVR_MSG_AMBIENT_LIGHT_LEVEL);
     event->addArg((uint8_t) current_lux_bin);
     EventManager::staticRaiseEvent(event);
     StringBuilder local_log;

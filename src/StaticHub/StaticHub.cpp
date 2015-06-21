@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <ManuvrOS/EventManager.h>
 #include <ManuvrOS/XenoSession/XenoSession.h>
 
-#include <sys/time.h>
+#include <Time/Time.h>
 #include <unistd.h>
 
 #include "ManuvrOS/Drivers/ManuvrableNeoPixel/ManuvrableNeoPixel.h"
@@ -114,8 +114,6 @@ const MessageTypeDef message_defs_viam_sonus[] = {
   {  VIAM_SONUS_MSG_UNGROUP_CHANNELS      , 0x0000,               "UNGROUP_CHANNELS",      ManuvrMsg::MSG_ARGS_NONE }, // Pass a group ID to free the channels it contains, or no args to ungroup everything.
   {  VIAM_SONUS_MSG_ENCODER_UP            , 0x0000,               "ENCODER_UP",            ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was incremented.
   {  VIAM_SONUS_MSG_ENCODER_DOWN          , 0x0000,               "ENCODER_DOWN",          ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was decremented.
-  {  VIAM_SONUS_MSG_NEOPIXEL_REFRESH      , MSG_FLAG_IDEMPOTENT,  "NEOPIXEL_REFRESH",      ManuvrMsg::MSG_ARGS_NONE }, // Something wrote to the neopixel "frame buffer".
-  {  VIAM_SONUS_MSG_AMBIENT_LIGHT_LEVEL   , MSG_FLAG_IDEMPOTENT,  "AMBIENT_LIGHT_LEVEL",   ManuvrMsg::MSG_ARGS_U16 }, // Something wrote to the neopixel "frame buffer".
   {  VIAM_SONUS_MSG_ADC_SCAN              , MSG_FLAG_IDEMPOTENT,  "ADC_SCAN",              ManuvrMsg::MSG_ARGS_NONE }, // It is time to scan the ADC channels.
 };
 
@@ -302,6 +300,9 @@ void StaticHub::currentDateTime(StringBuilder* target) {
 		  
 		  target->concatf("%d-%d-%dT", RTC_DateStructure.RTC_Year, RTC_DateStructure.RTC_Month, RTC_DateStructure.RTC_Date);
 		  target->concatf("%d:%d:%d+00:00", RTC_TimeStructure.RTC_Hours, RTC_TimeStructure.RTC_Minutes, RTC_TimeStructure.RTC_Seconds);
+		#elif defined(__MK20DX256__) | defined(__MK20DX128__)
+		  target->concatf("%04d-%02d-%02dT", year(), month(), day());
+		  target->concatf("%02d:%02d:%02d+00:00", hour(), minute(), second());
 		#else
 		  target->concat("<UNSUPPORTED PLATFORM>\n");
 		#endif
@@ -343,6 +344,8 @@ void StaticHub::maskable_interrupts(bool enable) {
 *   their own interrupts online. Solve that before trying to make this pretty.
 */
 void StaticHub::off_class_interrupts(bool enable) {
+  if (enable) {  sei();  }
+  else {         cli();  }
 }
 
 
@@ -352,6 +355,12 @@ volatile void jumpToBootloader(void) {
 
 
 volatile void reboot(void) {
+  #if defined(__MK20DX256__)
+    *((uint32_t *)0xE000ED0C) = 0x5FA0004;
+    //_restart_Teensyduino_();
+  #elif defined(__MK20DX128__)
+    *((uint32_t *)0xE000ED0C) = 0x5FA0004;
+  #endif
 }
 
 
@@ -444,7 +453,7 @@ void StaticHub::initSchedules(void) {
   __scheduler.disableSchedule(pid_profiler_report);
 
   // This schedule marches the data into the USB VCP at a throttled rate.
-  pid_log_moderator = __scheduler.createSchedule(2,  -1, false, stdout_funnel);
+  pid_log_moderator = __scheduler.createSchedule(7,  -1, false, stdout_funnel);
   __scheduler.delaySchedule(pid_log_moderator, 1000);
   
   
@@ -468,10 +477,22 @@ void StaticHub::init_RNG(void) volatile {
 
 /*
 * Setup the realtime clock module.
-* Informed by code here:
-* http://autoquad.googlecode.com/svn/trunk/onboard/rtc.c
+* Taken from the Teensyduino examples.
 */
+#if defined(__MK20DX256__) | defined(__MK20DX128__)
+  time_t getTeensy3Time() {   return Teensy3Clock.get();   }
+#endif
+
 void StaticHub::initRTC(void) volatile {
+  #if defined(__MK20DX256__) | defined(__MK20DX128__)
+    setSyncProvider(getTeensy3Time);
+    if (timeStatus() != timeSet) {
+      rtc_startup_state = RTC_STARTUP_GOOD_UNSET;
+    }
+    else {
+      rtc_startup_state = RTC_STARTUP_GOOD_SET;
+    }
+  #endif
 }
 
 
@@ -519,13 +540,9 @@ int8_t StaticHub::bootstrap() {
 //    log_buffer.concatf("Adding %s\n", message_defs_viam_sonus[i].debug_label);
   }
 
-  event_manager.subscribe((EventReceiver*) this);            // Subscribe StaticHub as top priority in EventManager.
   event_manager.subscribe((EventReceiver*) &__scheduler);    // Subscribe the Scheduler.
+  event_manager.subscribe((EventReceiver*) this);            // Subscribe StaticHub as top priority in EventManager.
   
-  /*
-  If we are going to use 50MHz GPIO rates, we should probably also turn on the I/O
-  compensation cell to reduce noise.
-  */
   // Setup the first i2c adapter and Subscribe it to EventManager.
   i2c = new I2CAdapter(1);
   event_manager.subscribe((EventReceiver*) i2c);
@@ -555,6 +572,7 @@ int8_t StaticHub::bootstrap() {
   event_manager.subscribe((EventReceiver*) light_sensor);
   event_manager.subscribe((EventReceiver*) adc_scanner);
 
+  //initRTC();
   initSchedules();   // We know we will need some schedules...
 
   ManuvrEvent *boot_completed_ev = EventManager::returnEvent(MANUVR_MSG_SYS_BOOT_COMPLETED);
@@ -623,7 +641,7 @@ bool power_mode = false;
 *   one-shot schedule and performs all of the cleanup for latent consequences of bootstrap().
 */
 int8_t StaticHub::bootComplete() {
-  //off_class_interrupts(true);  // Now configure interrupts, lift interrupt masks, and let the madness begin.
+  off_class_interrupts(true);  // Now configure interrupts, lift interrupt masks, and let the madness begin.
 	return 0;
 }
 
@@ -866,14 +884,6 @@ TODO: Keep them as short as possible.
 * Called from the SysTick handler once per ms.
 */
 volatile void StaticHub::advanceScheduler(void) {
-	if (0 == (millis_since_reset++ % watchdog_mark)) {
-	  /* If it's time to punch the watchdog, do so. Doing it in the ISR will prevent a
-	       long-running operation from causing a reset. This way, the only thing that will
-	       cause a watchdog reset is if this ISR fails to fire. */
-	  //WWDG_SetCounter(127);
-	}
-	// TODO: advanceScheduler() can be made *much* faster with a bit of re-work in the Scheduler class.
-	if (NULL != INSTANCE) ((StaticHub*) INSTANCE)->__scheduler.advanceScheduler();
 }
 
 
@@ -994,12 +1004,14 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
     case 'B':
       if (temp_byte == 128) {
         EventManager::raiseEvent(MANUVR_MSG_SYS_BOOTLOADER, NULL);
+        break;
       }
       local_log.concatf("Will only jump to bootloader if the number '128' follows the command.\n");
       break;
     case 'b':
       if (temp_byte == 128) {
         EventManager::raiseEvent(MANUVR_MSG_SYS_REBOOT, NULL);
+        break;
       }
       local_log.concatf("Will only reboot if the number '128' follows the command.\n");
       break;
