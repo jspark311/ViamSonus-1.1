@@ -534,7 +534,7 @@ int8_t AudioRouter::notify(ManuvrEvent *active_event) {
     case VIAM_SONUS_MSG_ROUTE:
       if (0 == active_event->consumeArgAs(&temp_uint8_0)) {  // Output channel param
         if (0 == active_event->consumeArgAs(&temp_uint8_1)) {  // Input channel param
-          // Unrouting a given output from a given input...
+          // Routing a given output from a given input...
           if (AUDIO_ROUTER_ERROR_NO_ERROR != route(temp_uint8_0, temp_uint8_1)) {
             local_log.concat("Failed to route one or more channels.\n");
           }
@@ -558,3 +558,78 @@ int8_t AudioRouter::notify(ManuvrEvent *active_event) {
   return return_value;
 }
 
+
+
+
+void AudioRouter::procDirectDebugInstruction(StringBuilder *input) {
+  char* str = input->position(0);
+  
+  char c = *(str);
+  uint8_t temp_byte = 0;        // Many commands here take a single integer argument.
+  if (*(str) != 0) {
+    temp_byte = atoi((char*) str+1);
+  }
+
+  StringBuilder parse_mule;
+  ManuvrEvent* event;
+  
+  switch (c) {
+    // AudioRouter debugging cases....
+    case 'i':
+      printDebug(&local_log);
+      break;
+
+	  
+	case 'r':
+	case 'u':
+      parse_mule.concat(str);
+      parse_mule.split(" ");
+      parse_mule.drop_position(0);
+      
+      event = new ManuvrEvent((c == 'r') ? VIAM_SONUS_MSG_ROUTE : VIAM_SONUS_MSG_UNROUTE);
+      switch (parse_mule.count()) {
+        case 2:
+          event->addArg((uint8_t) parse_mule.position_as_int(0));
+          event->addArg((uint8_t) parse_mule.position_as_int(1));
+          break;
+        default:
+		  local_log.concat("Not enough arguments to (un)route:\n");
+          break;
+      }
+      raiseEvent(event);
+	  break;
+	  
+	case 'V':
+      parse_mule.concat(str);
+      parse_mule.split(" ");
+      parse_mule.drop_position(0);
+      event = new ManuvrEvent(VIAM_SONUS_MSG_OUTPUT_CHAN_VOL);
+      switch (parse_mule.count()) {
+        case 2:
+          event->addArg((uint8_t) parse_mule.position_as_int(0));
+          event->addArg((uint8_t) parse_mule.position_as_int(1));
+          break;
+        case 1:
+          event->addArg((uint8_t) parse_mule.position_as_int(0));
+          break;
+        default:
+		  local_log.concat("Not enough arguments to set volume:\n");
+          break;
+      }
+      raiseEvent(event);
+	  break;
+	  
+    case 'e':
+      if (AUDIO_ROUTER_ERROR_NO_ERROR != enable()) local_log.concat("Failed to enable routing.\n");
+      break;
+    case 'd':
+      if (AUDIO_ROUTER_ERROR_NO_ERROR != disable()) local_log.concat("Failed to disable routing.\n");
+      break;
+
+	default:
+      EventReceiver::procDirectDebugInstruction(input);
+      break;
+  }
+  
+  if (local_log.length() > 0) {    StaticHub::log(&local_log);  }
+}

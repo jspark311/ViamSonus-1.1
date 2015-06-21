@@ -24,11 +24,31 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "Drivers/AudioRouter/AudioRouter.h"
 //#include "ManuvrOS/XenoSession/XenoSession.h"
 
+#include <Audio/Audio.h>
+
 //#include <Adafruit_GFX.h>
 
 #define HOST_BAUD_RATE  115200
 
 
+
+
+/****************************************************************************************************
+* Audio test code.                                                                                  *
+****************************************************************************************************/
+AudioSynthToneSweep myEffect;
+AudioOutputAnalog   audioOutput; 
+
+// The tone sweep goes to left and right channels
+AudioConnection c1(myEffect, 0, audioOutput, 0);
+AudioConnection c2(myEffect, 0, audioOutput, 1);
+
+
+float t_ampx = 0.8;
+int t_lox = 10;
+int t_hix = 22000;
+// Length of time for the sweep in seconds
+float t_timex = 10;
 
 /****************************************************************************************************
 * Entry-point for teensy3...                                                                        *
@@ -74,8 +94,12 @@ void setup() {
   
   pinMode(14, INPUT);
 
+  AudioMemory(4);
+  
   //analogReadRes(BEST_ADC_PRECISION);  // All ADC channels shall be 10-bit.
   analogReadAveraging(32);            // And maximally-smoothed by the hardware (32).
+  
+  analogWriteResolution(12);   // Setup the DAC.
 
   sh = StaticHub::getInstance();
   
@@ -106,6 +130,13 @@ void loop() {
     while (Serial.available() < 1) {
       event_manager->procIdleFlags();
       scheduler->serviceScheduledEvents();
+	  
+	  if(! myEffect.isPlaying()) {
+		myEffect.play(t_ampx,t_hix,t_lox,t_timex);
+		int temp_x = t_hix;
+		t_hix = t_lox;
+		t_lox = temp_x;
+	  }
     }
 
     // Zero the buffer.

@@ -1162,6 +1162,10 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
       raiseEvent(event);
       break;
 	  
+    case 'a':
+      input->cull(1);
+      audio_router->procDirectDebugInstruction(input);
+	    break;
     case 'z':
       input->cull(1);
       ((I2CAdapter*) i2c)->procDirectDebugInstruction(input);

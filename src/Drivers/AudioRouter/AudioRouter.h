@@ -107,6 +107,7 @@ class AudioRouter : public EventReceiver {
     const char* getReceiverName();
     int8_t notify(ManuvrEvent*);
     int8_t callback_proc(ManuvrEvent *);
+	void procDirectDebugInstruction(StringBuilder*);
 
 
     // TODO: These ought to be statics...
