@@ -52,10 +52,6 @@ AudioRouter::AudioRouter(I2CAdapter* i2c, uint8_t cp_addr, uint8_t dp_lo_addr, u
     i2c->addSlaveDevice(dp_lo);
     i2c->addSlaveDevice(dp_hi);
     
-    cp_switch->init();
-    dp_lo->init();
-    dp_hi->init();
-    
     for (uint8_t i = 0; i < 12; i++) {   // Setup our input channels.
       inputs[i] = (CPInputChannel*) malloc(sizeof(CPInputChannel));
       inputs[i]->cp_row   = i;
@@ -70,10 +66,6 @@ AudioRouter::AudioRouter(I2CAdapter* i2c, uint8_t cp_addr, uint8_t dp_lo_addr, u
       outputs[i]->dp_dev    = (i < 4) ? dp_lo : dp_hi;
       outputs[i]->dp_reg    = i % 4;
       outputs[i]->dp_val    = 128;
-    }
-    
-    if (init() != AUDIO_ROUTER_ERROR_NO_ERROR) {
-      StaticHub::log(__PRETTY_FUNCTION__, LOG_ERR, "Tried to init AudioRouter and failed.");
     }
 }
 
@@ -393,6 +385,9 @@ int8_t AudioRouter::status(StringBuilder* output) {
 */
 int8_t AudioRouter::bootComplete() {
   EventReceiver::bootComplete();
+  if (init() != AUDIO_ROUTER_ERROR_NO_ERROR) {
+    StaticHub::log(__PRETTY_FUNCTION__, LOG_ERR, "Tried to init AudioRouter and failed.\n");
+  }
   return 0;
 }
 
@@ -562,7 +557,7 @@ int8_t AudioRouter::notify(ManuvrEvent *active_event) {
 
 
 void AudioRouter::procDirectDebugInstruction(StringBuilder *input) {
-  char* str = input->position(0);
+  char* str = (char*) input->string();
   
   char c = *(str);
   uint8_t temp_byte = 0;        // Many commands here take a single integer argument.

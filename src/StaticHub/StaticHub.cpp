@@ -31,35 +31,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <Time/Time.h>
 #include <unistd.h>
 
+
 #include "ManuvrOS/Drivers/ManuvrableNeoPixel/ManuvrableNeoPixel.h"
 #include "Drivers/AudioRouter/AudioRouter.h"
 #include "Drivers/LightSensor/LightSensor.h"
 #include "Drivers/ADCScanner/ADCScanner.h"
-
-
 #include "Encoder/Encoder.h"
 
 
 // Externs and prototypes...
-// I really don't like doing this, but haven't found a better way to get good ISR behavior.
 extern volatile I2CAdapter* i2c;
-
 uint32_t profiler_mark_0 = 0;
 uint32_t profiler_mark_1 = 0;
 
+unsigned long start_time_micros = 0;
 #define NEOPIXEL_PIN  11
 
 Encoder* encoder_stack = NULL;;
 
-
-//extern XenoSession *sess;
-
-
-  
 /****************************************************************************************************
 * Scheduler callbacks. Please note that these are NOT part of StaticHub.                            *
 ****************************************************************************************************/
-
 /*
 * Scheduler callback
 * This gets called periodically to moderate traffic volume across the USB link
@@ -71,13 +63,7 @@ void stdout_funnel() {
       StaticHub::log_buffer.clear();
     }
     else {
-      #ifdef ARDUINO
-      if (!StaticHub::mute_logger) {
-        Serial.print((char*) StaticHub::log_buffer.string());
-      }
-      #else
-      if (!StaticHub::mute_logger) printf(StaticHub::log_buffer.position(0));
-      #endif
+      printf("%s", StaticHub::log_buffer.position(0));
       StaticHub::log_buffer.drop_position(0);
     }
   }
@@ -86,6 +72,22 @@ void stdout_funnel() {
   }
 }
 
+
+#ifdef __cplusplus
+  extern "C" {
+    //__attribute__((weak)) omit this as used in _write() in Print.cpp
+  
+    // this function overrides the one of the same name in Print.cpp
+    int _write(int file, char *ptr, int len)
+    {
+        // send chars to zero or more outputs
+        for (int i = 0; i < len; i++)  {
+            Serial.print(ptr[i]);
+        }
+        return 0;
+    }
+  } // end extern "C" section
+#endif
 
 
 /****************************************************************************************************
@@ -124,11 +126,11 @@ const MessageTypeDef message_defs_viam_sonus[] = {
 ****************************************************************************************************/
 const char* StaticHub::getRTCStateString(uint32_t code) {
   switch (code) {
-    case RTC_STARTUP_UNKNOWN:     return "RTC_STARTUP_UNKNOWN";
-    case RTC_OSC_FAILURE:         return "RTC_OSC_FAILURE";
-    case RTC_STARTUP_GOOD_UNSET:  return "RTC_STARTUP_GOOD_UNSET";
-    case RTC_STARTUP_GOOD_SET:    return "RTC_STARTUP_GOOD_SET";
-    default:                      return "RTC_STARTUP_UNDEFINED";
+    case MANUVR_RTC_STARTUP_UNKNOWN:     return "RTC_STARTUP_UNKNOWN";
+    case MANUVR_RTC_OSC_FAILURE:         return "RTC_OSC_FAILURE";
+    case MANUVR_RTC_STARTUP_GOOD_UNSET:  return "RTC_STARTUP_GOOD_UNSET";
+    case MANUVR_RTC_STARTUP_GOOD_SET:    return "RTC_STARTUP_GOOD_SET";
+    default:                             return "RTC_STARTUP_UNDEFINED";
   }
 }
 
@@ -180,7 +182,7 @@ volatile void StaticHub::log(StringBuilder *str) {
 
 
 void StaticHub::disableLogCallback(){
-	__scheduler.disableSchedule(pid_log_moderator);
+  __scheduler.disableSchedule(pid_log_moderator);
 }
 
 
@@ -226,27 +228,8 @@ volatile bool StaticHub::provide_random_int(uint32_t nu_rnd) {
 * @return   A 32-bit unsigned random number. This can be cast as needed.
 */
 uint32_t StaticHub::randomInt(void) {
-	uint8_t i = 0;
-	uint8_t t = 0;
-	while (next_random_int[i] == 0) {
-		// Spin inside this array until we get a random number (anything nonzero).
-		i = (i+1) % STATICHUB_RNG_CARRY_CAPACITY;
-		t++;
-		if (t > 100) {
-		  EventManager::raiseEvent(MANUVR_MSG_RNG_BUFFER_EMPTY, NULL);
-			return 0;
-		}
-	}
-	uint32_t return_value = next_random_int[i];
-	next_random_int[i] = 0;
-	
-	// We should enable the RNG again to prevent us from exhausting our cache.
-	#ifdef STM32F4XX
-    RNG_ITConfig(ENABLE);
-    RNG_Cmd(ENABLE);
-  #endif
-
-	return return_value;
+  uint32_t return_value = rand();
+  return return_value;
 }
 
 
@@ -265,8 +248,8 @@ bool StaticHub::setTimeAndDate(char* nu_date_time) {
 * Returns an integer representing the current datetime.
 */
 uint32_t StaticHub::currentTimestamp(void) {
-	uint32_t return_value = 0;
-	return return_value;
+  uint32_t return_value = 0;
+  return return_value;
 }
 
 /*
@@ -308,7 +291,6 @@ void StaticHub::currentDateTime(StringBuilder* target) {
 		#endif
 	}
 }
-
 
 
 
@@ -487,10 +469,10 @@ void StaticHub::initRTC(void) volatile {
   #if defined(__MK20DX256__) | defined(__MK20DX128__)
     setSyncProvider(getTeensy3Time);
     if (timeStatus() != timeSet) {
-      rtc_startup_state = RTC_STARTUP_GOOD_UNSET;
+      rtc_startup_state = MANUVR_RTC_STARTUP_GOOD_UNSET;
     }
     else {
-      rtc_startup_state = RTC_STARTUP_GOOD_SET;
+      rtc_startup_state = MANUVR_RTC_STARTUP_GOOD_SET;
     }
   #endif
 }
@@ -519,19 +501,13 @@ void StaticHub::nvicConf() volatile {
 }
 
   
-ManuvrableNeoPixel* strip = NULL;
-LightSensor* light_sensor = NULL;
-ADCScanner*  adc_scanner  = NULL;
-
 /*
 * The primary init function. Calling this will bring the entire system online if everything is
 *   working nominally.
 */
 int8_t StaticHub::bootstrap() {
   log_buffer.concatf("\n\n%s v%s    Build date: %s %s\nBootstrap beginning...\n", IDENTITY_STRING, VERSION_STRING, __DATE__, __TIME__);
-  
-  encoder_stack = new Encoder(2, 3);
-  
+
   // One of the first things we need to do is populate the EventManager with all of the
   // message codes that come with this firmware.
   int mes_count = sizeof(message_defs_viam_sonus) / sizeof(MessageTypeDef);
@@ -543,6 +519,8 @@ int8_t StaticHub::bootstrap() {
   event_manager.subscribe((EventReceiver*) &__scheduler);    // Subscribe the Scheduler.
   event_manager.subscribe((EventReceiver*) this);            // Subscribe StaticHub as top priority in EventManager.
   
+  encoder_stack = new Encoder(2, 3);
+
   // Setup the first i2c adapter and Subscribe it to EventManager.
   i2c = new I2CAdapter(1);
   event_manager.subscribe((EventReceiver*) i2c);
@@ -572,7 +550,8 @@ int8_t StaticHub::bootstrap() {
   event_manager.subscribe((EventReceiver*) light_sensor);
   event_manager.subscribe((EventReceiver*) adc_scanner);
 
-  //initRTC();
+  init_RNG();      // Fire up the RNG...
+  initRTC();
   initSchedules();   // We know we will need some schedules...
 
   ManuvrEvent *boot_completed_ev = EventManager::returnEvent(MANUVR_MSG_SYS_BOOT_COMPLETED);
@@ -589,20 +568,18 @@ int8_t StaticHub::bootstrap() {
 *   recursion.
 */
 StaticHub* StaticHub::getInstance() {
-	if (StaticHub::INSTANCE == NULL) {
-	  // TODO: remove last traces of this pattern.
-	  // This should never happen, but if it does, it will crash us for sure.
-		StaticHub::INSTANCE = new StaticHub();
-	}
-	// And that is how the singleton do...
-	return (StaticHub*) StaticHub::INSTANCE;
+  if (StaticHub::INSTANCE == NULL) {
+    StaticHub::INSTANCE = new StaticHub();
+  }
+  // And that is how the singleton do...
+  return (StaticHub*) StaticHub::INSTANCE;
 }
-
 
 
 StaticHub::StaticHub() {
   StaticHub::INSTANCE = this;
   scheduler = &__scheduler;
+  start_time_micros = micros();
 }
 
 
@@ -615,9 +592,6 @@ StaticHub::StaticHub() {
 Scheduler*    StaticHub::fetchScheduler(void) {     return &__scheduler;     }
 EventManager* StaticHub::fetchEventManager(void) {  return &event_manager;   }
 AudioRouter*  StaticHub::fetchAudioRouter(void) {   return audio_router;     }
-
-
-bool power_mode = false;
 
 
 /****************************************************************************************************
@@ -641,9 +615,11 @@ bool power_mode = false;
 *   one-shot schedule and performs all of the cleanup for latent consequences of bootstrap().
 */
 int8_t StaticHub::bootComplete() {
+  //EventReceiver::bootComplete()  <--- Note that we aren't going to do this. We already know about the scheduler.
   off_class_interrupts(true);  // Now configure interrupts, lift interrupt masks, and let the madness begin.
-	return 0;
+  return 1;
 }
+
 
 
 /**
@@ -668,8 +644,8 @@ int8_t StaticHub::callback_proc(ManuvrEvent *event) {
   /* Some class-specific set of conditionals below this line. */
   switch (event->event_code) {
     case MANUVR_MSG_SYS_BOOT_COMPLETED:
-      StaticHub::log("StaicHub: Boot complete.\n");
-      bootstrap_completed = true;
+      StaticHub::log("Boot complete.\n");
+      boot_completed = true;
       break;
     default:
       break;
@@ -727,7 +703,6 @@ int8_t StaticHub::notify(ManuvrEvent *active_event) {
           switch (button) {
             case 2:
               return_value++;
-              power_mode = !power_mode;
               break;
             case 3:
               return_value++;
@@ -744,7 +719,7 @@ int8_t StaticHub::notify(ManuvrEvent *active_event) {
       break;
 
     case VIAM_SONUS_MSG_ADC_SCAN:
-      if (power_mode) {
+	  {
         uint8_t* npfb = strip->getPixels();
         for (uint8_t i = 0; i < 10; i++) {
           switch ((adc_scanner->getSample(i) - 512) / 64) {
@@ -799,7 +774,7 @@ int8_t StaticHub::notify(ManuvrEvent *active_event) {
               *(npfb++) = 0;
               break;
           }
-        }
+		}
         strip->show();
         return_value++;
       }
@@ -884,6 +859,8 @@ TODO: Keep them as short as possible.
 * Called from the SysTick handler once per ms.
 */
 volatile void StaticHub::advanceScheduler(void) {
+  // No watchdog timer on this platform. Therefore, we call
+  //   the scheduler from the main loop.
 }
 
 
@@ -893,15 +870,15 @@ volatile void StaticHub::advanceScheduler(void) {
 * a new-line character on the wire.
 */
 void StaticHub::feedUSBBuffer(uint8_t *buf, int len, bool terminal) {
-	usb_rx_buffer.concat(buf, len);
-	
-	if (terminal) {
-		// If the ISR saw a CR or LF on the wire, we tell the parser it is ok to
-		// run in idle time.
+  usb_rx_buffer.concat(buf, len);
+  
+  if (terminal) {
+    // If the ISR saw a CR or LF on the wire, we tell the parser it is ok to
+    // run in idle time.
     ManuvrEvent* event = EventManager::returnEvent(MANUVR_MSG_USER_DEBUG_INPUT);
     event->specific_target = (EventReceiver*) this;
     raiseEvent(event);
-	}
+  }
 }
 
 
@@ -936,53 +913,47 @@ const char* StaticHub::getReceiverName() {  return "StaticHub";  }
 * @param   StringBuilder* The buffer into which this fxn should write its output.
 */
 void StaticHub::printDebug(StringBuilder* output) {
-	if (NULL == output) return;
+  if (NULL == output) return;
   uint32_t initial_sp = getStackPointer();
-	uint32_t final_sp = getStackPointer();
-	
-	EventReceiver::printDebug(output);
-	output->concatf("--- %s v%s    Build date: %s %s\n\n", IDENTITY_STRING, VERSION_STRING, __DATE__, __TIME__);
-	output->concatf("---\n--- bootstrap_completed  %s\n", (bootstrap_completed) ? "yes" : "no");
-	output->concatf("---\n--- stack grows %s\n", (final_sp > initial_sp) ? "up" : "down");
-	output->concatf("--- getStackPointer()   0x%08x\n---\n", getStackPointer());
+  uint32_t final_sp = getStackPointer();
+  
+  EventReceiver::printDebug(output);
+  output->concatf("--- %s v%s    Build date: %s %s\n\n", IDENTITY_STRING, VERSION_STRING, __DATE__, __TIME__);
+  output->concatf("---\n--- boot_completed  %s\n", (boot_completed) ? "yes" : "no");
+  output->concatf("---\n--- stack grows %s\n", (final_sp > initial_sp) ? "up" : "down");
+  output->concatf("--- getStackPointer()   0x%08x\n---\n", getStackPointer());
 
-	output->concatf("--- millis()            0x%08x\n", millis());
-	output->concatf("--- micros()            0x%08x\n", micros());
-	currentDateTime(output);
-	output->concatf("\nrtc_startup_state %s\n", getRTCStateString(rtc_startup_state));
+  output->concatf("--- millis()            0x%08x\n", millis());
+  output->concatf("--- micros()            0x%08x\n", micros());
+  currentDateTime(output);
+  output->concatf("\nrtc_startup_state %s\n", getRTCStateString(rtc_startup_state));
 }
 
 
 
 void StaticHub::print_type_sizes(void) {
-	StringBuilder temp("---< Type sizes >-----------------------------\n");
-	temp.concatf("Elemental structures:\n");
-	temp.concatf("\tStringBuilder         %d\n", sizeof(StringBuilder));
-	temp.concatf("\tLinkedList<void*>     %d\n", sizeof(LinkedList<void*>));
-	temp.concatf("\tPriorityQueue<void*>   %d\n", sizeof(PriorityQueue<void*>));
-	
-	temp.concatf("Peripheral sensor package:\n");
-	
-	temp.concatf("i2c machinary:\n");
-	temp.concatf("\tI2CQueuedOperation    %d\n", sizeof(I2CQueuedOperation));
-	temp.concatf("\tI2CDevice (Registers) %d\n", sizeof(I2CDeviceWithRegisters));
-	temp.concatf("\tI2CDevice             %d\n", sizeof(I2CDevice));
-	temp.concatf("\tDeviceRegister        %d\n", sizeof(DeviceRegister));
+  StringBuilder temp("---< Type sizes >-----------------------------\n");
+  temp.concatf(" Elemental structures:\n\t StringBuilder         %d\n", sizeof(StringBuilder));
+  temp.concatf("\t LinkedList<void*>     %d\n", sizeof(LinkedList<void*>));
+  temp.concatf("\t PriorityQueue<void*>   %d\n", sizeof(PriorityQueue<void*>));
 
-	temp.concatf(" Core singletons:\n");
-	temp.concatf("\t StaticHub             %d\n", sizeof(StaticHub));
-	temp.concatf("\t Scheduler             %d\n", sizeof(Scheduler));
-	temp.concatf("\t EventManager          %d\n", sizeof(EventManager));
-	temp.concatf("\t I2CAdapter            %d\n", sizeof(I2CAdapter));
+  temp.concatf(" i2c machinary:\n\t I2CQueuedOperation    %d\n", sizeof(I2CQueuedOperation));
+  temp.concatf("\t I2CDevice (Registers) %d\n", sizeof(I2CDeviceWithRegisters));
+  temp.concatf("\t I2CDevice             %d\n", sizeof(I2CDevice));
+  temp.concatf("\t DeviceRegister        %d\n", sizeof(DeviceRegister));
 
-	temp.concatf(" Messaging components:\n");
-	temp.concatf("\t ManuvrEvent      %d\n", sizeof(ManuvrEvent));
-	temp.concatf("\t ManuvrMsg        %d\n", sizeof(ManuvrMsg));
-	temp.concatf("\t Argument              %d\n", sizeof(Argument));
-	temp.concatf("\t SchedulerItem         %d\n", sizeof(ScheduleItem));
-	temp.concatf("\t TaskProfilerData      %d\n", sizeof(TaskProfilerData));
+  temp.concatf(" Core singletons:\n\t StaticHub             %d\n", sizeof(StaticHub));
+  temp.concatf("\t Scheduler             %d\n", sizeof(Scheduler));
+  temp.concatf("\t EventManager          %d\n", sizeof(EventManager));
+  temp.concatf("\t I2CAdapter            %d\n", sizeof(I2CAdapter));
 
-	StaticHub::log(&temp);
+  temp.concatf(" Messaging components:\n\t ManuvrEvent      %d\n", sizeof(ManuvrEvent));
+  temp.concatf("\t ManuvrMsg        %d\n", sizeof(ManuvrMsg));
+  temp.concatf("\t Argument              %d\n", sizeof(Argument));
+  temp.concatf("\t SchedulerItem         %d\n", sizeof(ScheduleItem));
+  temp.concatf("\t TaskProfilerData      %d\n", sizeof(TaskProfilerData));
+
+  StaticHub::log(&temp);
 }
 
 
@@ -995,7 +966,6 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
   if (*(str) != 0) {
     temp_byte = atoi((char*) str+1);
   }
-
   ManuvrEvent *event = NULL;  // Pitching events is a common thing in this fxn...
   
   StringBuilder parse_mule;
@@ -1070,8 +1040,7 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
           break;
       }
       break;
-      
-      
+
     case 'i':   // StaticHub debug prints.
       if (1 == temp_byte) {
         local_log.concat("EventManager profiling enabled.\n");
@@ -1091,18 +1060,11 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
         local_log.concat("EventManager profiling disabled.\n");
         event_manager.profiler(false);
       }
-      else if (10 == temp_byte) {
-        local_log.concat("Sending boot complete...\n");
-        EventManager::raiseEvent(MANUVR_MSG_SYS_BOOT_COMPLETED, this);  // Bootstrap complete
-      }
       else {
         printDebug(&local_log);
       }
       break;
-      
-    case 'S':
-      break;
-   
+
     case 'o':
       if (temp_byte) {
         event = new ManuvrEvent(MANUVR_MSG_SCHED_PROFILER_STOP);
@@ -1173,20 +1135,22 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
       }
       raiseEvent(event);
       break;
-	  
+
     case 'a':
       input->cull(1);
       audio_router->procDirectDebugInstruction(input);
-	    break;
+      break;
+
     case 'z':
       input->cull(1);
       ((I2CAdapter*) i2c)->procDirectDebugInstruction(input);
-	    break;
+      break;
+
     default:
       break;
   }
 
-  if (local_log.length() > 0) {    StaticHub::log(&local_log);  } // Cheap trick to trigger the logger.
+  if (local_log.length() > 0) StaticHub::log(&local_log);
   last_user_input.clear();
 }
 

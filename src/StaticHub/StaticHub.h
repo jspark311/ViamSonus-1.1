@@ -83,6 +83,8 @@ Initialization order matters a great deal. We should bring classes online in ord
 #ifndef __STATIC_HUB_H__
 #define __STATIC_HUB_H__
 
+#include "FirmwareDefs.h"
+
   // System-level includes.
   #include <inttypes.h>
   #include <stdlib.h>
@@ -99,40 +101,39 @@ Initialization order matters a great deal. We should bring classes online in ord
   #define LOG_INFO    6    /* informational */
   #define LOG_DEBUG   7    /* debug-level messages */
 
-
-  #include "FirmwareDefs.h"
   #include <ManuvrOS/Scheduler.h>
   #include <ManuvrOS/EventManager.h>
-  #include "StringBuilder/StringBuilder.h"
-  
+  #include <StringBuilder/StringBuilder.h>
+
 #ifdef ARDUINO
   #include <Arduino.h>
 #endif
-
-class AudioRouter;
 
 #ifdef __cplusplus
  extern "C" {
 #endif 
 
-
+// Forward-declare some things we are going to support....
+class AudioRouter;
+class ManuvrableNeoPixel;
+class LightSensor;
+class ADCScanner;
 
 /*
 * These are just lables. We don't really ever care about the *actual* integers being defined here. Only
 *   their consistency.
 */
-#define RTC_STARTUP_UNINITED       0x00000000
-#define RTC_STARTUP_UNKNOWN        0x23196400
-#define RTC_OSC_FAILURE            0x23196401
-#define RTC_STARTUP_GOOD_UNSET     0x23196402
-#define RTC_STARTUP_GOOD_SET       0x23196403
+#define MANUVR_RTC_STARTUP_UNINITED       0x00000000
+#define MANUVR_RTC_STARTUP_UNKNOWN        0x23196400
+#define MANUVR_RTC_OSC_FAILURE            0x23196401
+#define MANUVR_RTC_STARTUP_GOOD_UNSET     0x23196402
+#define MANUVR_RTC_STARTUP_GOOD_SET       0x23196403
 
 
 /*
 * These are constants where we care about the number.
 */
 #define STATICHUB_RNG_CARRY_CAPACITY           10     // How many random numbers should StaticHub cache?
-
 
 
 /*
@@ -143,8 +144,8 @@ class StaticHub : public EventReceiver {
     volatile static uint32_t millis_since_reset;
     volatile static uint8_t  watchdog_mark;
 
-    static bool mute_logger;
     static StringBuilder log_buffer;
+    static bool mute_logger; 
 
     StaticHub(void);
     static StaticHub* getInstance(void);
@@ -155,9 +156,6 @@ class StaticHub : public EventReceiver {
     volatile static void log(int severity, const char *str);                             // Pass-through to the logger class, whatever that happens to be.
     volatile static void log(const char *str);                                           // Pass-through to the logger class, whatever that happens to be.
     volatile static void log(StringBuilder *str);
-
-    // getPreference()
-    // setPreference()
     
     /*
     * Nice utility functions.
@@ -183,24 +181,19 @@ class StaticHub : public EventReceiver {
     *   requires them. That class can technically call this accessor for each use, but this should
     *   be discouraged, as the instances fetched by these functions should never change.
     */
-    // Sensors...
-
-    // fetchMicrophones(void);
-
     // Services...
     EventManager* fetchEventManager(void);
     Scheduler* fetchScheduler(void);
-    
+
     AudioRouter* fetchAudioRouter(void);
-    
     
     // Volatile statics that serve as ISRs...
     volatile static void advanceScheduler(void);
     
-    
+
     /* Overrides from EventReceiver */
-    void printDebug(StringBuilder*);
     const char* getReceiverName();
+    void printDebug(StringBuilder*);
     int8_t notify(ManuvrEvent*);
     int8_t callback_proc(ManuvrEvent *);
 
@@ -214,9 +207,8 @@ class StaticHub : public EventReceiver {
     
   private:
     volatile static StaticHub* INSTANCE;
-    
-    static volatile uint32_t next_random_int[STATICHUB_RNG_CARRY_CAPACITY];  // Stores the last 10 random numbers.
-    
+    volatile static uint32_t next_random_int[STATICHUB_RNG_CARRY_CAPACITY];  // Stores the last 10 random numbers.
+
     bool     usb_string_waiting   = false;
     StringBuilder usb_rx_buffer;
     StringBuilder last_user_input;
@@ -225,17 +217,18 @@ class StaticHub : public EventReceiver {
     uint32_t pid_log_moderator   = 0;  // Moderate the logs running into the USB line.
     uint32_t pid_ui_timeout      = 0;  // If the user is expected to do something, we won't wait forever...
     uint32_t pid_profiler_report = 0;  // Internal testing. Allows periodic profiler dumping.
-    uint32_t pid_prog_run_delay  = 0;  // Give the programmer a chance to stop system init before it get unmanagable.
+    uint32_t pid_prog_run_delay  = 0;  // Give the programmer a chance to stop system init before it gets unmanagable.
 
-    bool bootstrap_completed       = false;
-    
-    uint32_t rtc_startup_state = RTC_STARTUP_UNINITED;  // This is how we know what state we found the RTC in.
+    uint32_t rtc_startup_state = MANUVR_RTC_STARTUP_UNINITED;  // This is how we know what state we found the RTC in.
     
     // Global system resource handles...
     EventManager event_manager;            // This is our asynchronous message queue. 
     Scheduler __scheduler;
-    
     AudioRouter *audio_router = NULL;
+
+    ManuvrableNeoPixel* strip = NULL;
+    LightSensor* light_sensor = NULL;
+    ADCScanner*  adc_scanner  = NULL;
 
     // These fxns do string conversion for integer type-codes, and are only useful for logging.
     const char* getRTCStateString(uint32_t code);
@@ -258,6 +251,5 @@ class StaticHub : public EventReceiver {
 #ifdef __cplusplus
 }
 #endif 
-  
 
-#endif
+#endif   //__STATIC_HUB_H__
