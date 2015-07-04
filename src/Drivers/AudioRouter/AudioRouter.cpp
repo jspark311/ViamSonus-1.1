@@ -386,7 +386,7 @@ int8_t AudioRouter::status(StringBuilder* output) {
 int8_t AudioRouter::bootComplete() {
   EventReceiver::bootComplete();
   if (init() != AUDIO_ROUTER_ERROR_NO_ERROR) {
-    StaticHub::log(__PRETTY_FUNCTION__, LOG_ERR, "Tried to init AudioRouter and failed.\n");
+    StaticHub::log("Tried to init AudioRouter and failed.\n");
   }
   return 0;
 }
@@ -561,6 +561,7 @@ void AudioRouter::procDirectDebugInstruction(StringBuilder *input) {
   
   char c = *(str);
   uint8_t temp_byte = 0;        // Many commands here take a single integer argument.
+  
   if (*(str) != 0) {
     temp_byte = atoi((char*) str+1);
   }

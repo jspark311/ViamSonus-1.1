@@ -156,9 +156,6 @@ int8_t ADCScanner::callback_proc(ManuvrEvent *event) {
 
 int8_t ADCScanner::notify(ManuvrEvent *active_event) {
   int8_t return_value = 0;
-  uint8_t temp_uint8_0;
-  uint8_t temp_uint8_1;
-  StringBuilder *temp_sb;
   
   switch (active_event->event_code) {
     case VIAM_SONUS_MSG_ADC_SCAN:

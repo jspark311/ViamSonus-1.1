@@ -38,6 +38,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "Drivers/ADCScanner/ADCScanner.h"
 #include "Encoder/Encoder.h"
 
+//#include <Audio/utility/dspinst.h>
+#include <Audio/Audio.h>
+
 
 // Externs and prototypes...
 extern volatile I2CAdapter* i2c;
@@ -48,6 +51,37 @@ unsigned long start_time_micros = 0;
 #define NEOPIXEL_PIN  11
 
 Encoder* encoder_stack = NULL;;
+
+
+// These are only here until they are migrated to each receiver that deals with them.
+const MessageTypeDef message_defs_viam_sonus[] = {
+  {  VIAM_SONUS_MSG_ADC_SCAN              , MSG_FLAG_IDEMPOTENT,  "ADC_SCAN",              ManuvrMsg::MSG_ARGS_NONE }, // It is time to scan the ADC channels.
+  {  VIAM_SONUS_MSG_ENCODER_UP            , 0x0000,               "ENCODER_UP",            ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was incremented.
+  {  VIAM_SONUS_MSG_ENCODER_DOWN          , 0x0000,               "ENCODER_DOWN",          ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was decremented.
+  {  VIAM_SONUS_MSG_ENABLE_ROUTING        , 0x0000,               "ENABLE_ROUTING",        ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_DISABLE_ROUTING       , 0x0000,               "DISABLE_ROUTING",       ManuvrMsg::MSG_ARGS_NONE }, // 
+  {  VIAM_SONUS_MSG_NAME_INPUT_CHAN       , 0x0000,               "NAME_INPUT_CHAN",       ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_NAME_OUTPUT_CHAN      , 0x0000,               "NAME_OUTPUT_CHAN",      ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_DUMP_ROUTER           , 0x0000,               "DUMP_ROUTER",           ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_OUTPUT_CHAN_VOL       , 0x0000,               "OUTPUT_CHAN_VOL",       ManuvrMsg::MSG_ARGS_U8_U8 }, // Either takes a global volume, or a volume and a specific channel.
+  {  VIAM_SONUS_MSG_UNROUTE               , 0x0000,               "UNROUTE",               ManuvrMsg::MSG_ARGS_U8   }, // Unroutes the given channel, or all channels.
+  {  VIAM_SONUS_MSG_ROUTE                 , 0x0000,               "ROUTE",                 ManuvrMsg::MSG_ARGS_U8_U8 }, // Routes the input to the output.
+  {  VIAM_SONUS_MSG_PRESERVE_ROUTES       , 0x0000,               "PRESERVE_ROUTES",       ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_GROUP_CHANNELS        , 0x0000,               "GROUP_CHANNELS",        ManuvrMsg::MSG_ARGS_U8_U8 }, // Pass two output channels to group them (stereo).
+  {  VIAM_SONUS_MSG_UNGROUP_CHANNELS      , 0x0000,               "UNGROUP_CHANNELS",      ManuvrMsg::MSG_ARGS_NONE }, // Pass a group ID to free the channels it contains, or no args to ungroup everything.
+  
+  /* ViamSonus has neopixels and a light-level sensor. */
+  {  MANUVR_MSG_NEOPIXEL_REFRESH     , MSG_FLAG_IDEMPOTENT,  "NEOPIXEL_REFRESH"     , ManuvrMsg::MSG_ARGS_NONE }, // Cause any neopixel classes to refresh their strands.
+  {  MANUVR_MSG_DIRTY_FRAME_BUF      , 0x0000,               "DIRTY_FRAME_BUF"      , ManuvrMsg::MSG_ARGS_NONE }, // Something changed the framebuffer and we need to redraw.
+  {  MANUVR_MSG_AMBIENT_LIGHT_LEVEL  , MSG_FLAG_IDEMPOTENT,  "LIGHT_LEVEL"          , ManuvrMsg::MSG_ARGS_U16  }, // Unitless light-level report.
+
+  /* ViamSonus has hardware buttons... */
+  {  MANUVR_MSG_USER_BUTTON_PRESS    , MSG_FLAG_EXPORTABLE,               "USER_BUTTON_PRESS",    ManuvrMsg::MSG_ARGS_U8 },   // The user pushed a button with the given integer code.
+  {  MANUVR_MSG_USER_BUTTON_RELEASE  , MSG_FLAG_EXPORTABLE,               "USER_BUTTON_RELEASE",  ManuvrMsg::MSG_ARGS_U8 },   // The user released a button with the given integer code.
+};
+
+
+
 
 /****************************************************************************************************
 * Scheduler callbacks. Please note that these are NOT part of StaticHub.                            *
@@ -63,7 +97,8 @@ void stdout_funnel() {
       StaticHub::log_buffer.clear();
     }
     else {
-      printf("%s", StaticHub::log_buffer.position(0));
+      //printf("%s", StaticHub::log_buffer.position(0));
+      Serial.print((char*) StaticHub::log_buffer.position(0));
       StaticHub::log_buffer.drop_position(0);
     }
   }
@@ -99,25 +134,6 @@ volatile uint32_t StaticHub::millis_since_reset = 1;   // Start at one because W
 volatile uint8_t  StaticHub::watchdog_mark = 42;
 
 bool StaticHub::mute_logger = false;
-
-
-// These are only here until they are migrated to each receiver that deals with them.
-const MessageTypeDef message_defs_viam_sonus[] = {
-  {  VIAM_SONUS_MSG_ENABLE_ROUTING        , 0x0000,               "ENABLE_ROUTING",        ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_DISABLE_ROUTING       , 0x0000,               "DISABLE_ROUTING",       ManuvrMsg::MSG_ARGS_NONE }, // 
-  {  VIAM_SONUS_MSG_NAME_INPUT_CHAN       , 0x0000,               "NAME_INPUT_CHAN",       ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_NAME_OUTPUT_CHAN      , 0x0000,               "NAME_OUTPUT_CHAN",      ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_DUMP_ROUTER           , 0x0000,               "DUMP_ROUTER",           ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_OUTPUT_CHAN_VOL       , 0x0000,               "OUTPUT_CHAN_VOL",       ManuvrMsg::MSG_ARGS_U8_U8 }, // Either takes a global volume, or a volume and a specific channel.
-  {  VIAM_SONUS_MSG_UNROUTE               , 0x0000,               "UNROUTE",               ManuvrMsg::MSG_ARGS_U8   }, // Unroutes the given channel, or all channels.
-  {  VIAM_SONUS_MSG_ROUTE                 , 0x0000,               "ROUTE",                 ManuvrMsg::MSG_ARGS_U8_U8 }, // Routes the input to the output.
-  {  VIAM_SONUS_MSG_PRESERVE_ROUTES       , 0x0000,               "PRESERVE_ROUTES",       ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_GROUP_CHANNELS        , 0x0000,               "GROUP_CHANNELS",        ManuvrMsg::MSG_ARGS_U8_U8 }, // Pass two output channels to group them (stereo).
-  {  VIAM_SONUS_MSG_UNGROUP_CHANNELS      , 0x0000,               "UNGROUP_CHANNELS",      ManuvrMsg::MSG_ARGS_NONE }, // Pass a group ID to free the channels it contains, or no args to ungroup everything.
-  {  VIAM_SONUS_MSG_ENCODER_UP            , 0x0000,               "ENCODER_UP",            ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was incremented.
-  {  VIAM_SONUS_MSG_ENCODER_DOWN          , 0x0000,               "ENCODER_DOWN",          ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was decremented.
-  {  VIAM_SONUS_MSG_ADC_SCAN              , MSG_FLAG_IDEMPOTENT,  "ADC_SCAN",              ManuvrMsg::MSG_ARGS_NONE }, // It is time to scan the ADC channels.
-};
 
 
 
@@ -500,7 +516,7 @@ void StaticHub::gpioSetup() volatile {
 void StaticHub::nvicConf() volatile {
 }
 
-  
+
 /*
 * The primary init function. Calling this will bring the entire system online if everything is
 *   working nominally.
@@ -987,7 +1003,7 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
       break;
 
     case 'f':  // FPU benchmark
-      {
+      if (temp_byte == 0) {
         float a = 1.001;
         long time_var2 = millis();
         for (int i = 0;i < 1000000;i++) {
@@ -996,7 +1012,192 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
         local_log.concatf("Running floating-point test...\nTime:      %d ms\n", millis() - time_var2);
         local_log.concatf("Value:     %.5f\nFPU test concluded.\n", (double) a);
       }
+      else if (temp_byte == 1) {
+        // This is a test of black magic inverse-square-root efficiency.
+        int      r = 0;
+          long time_var2 = micros();
+          local_log.concat("signed_saturate_rshift() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            // No idea how to properly use this fxn. Doesn't matter yet...
+            r += signed_saturate_rshift((int32_t) r, 3, 2);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+
+          time_var2 = micros();
+          local_log.concat("signed_multiply_32x16b() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r += signed_multiply_32x16b(x, 14);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+
+          time_var2 = micros();
+          local_log.concat("signed_multiply_32x16t() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r += signed_multiply_32x16t(x, 14);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+
+          time_var2 = micros();
+          local_log.concat("multiply_32x32_rshift32() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r += multiply_32x32_rshift32(x, 2);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("multiply_32x32_rshift32_rounded() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r += multiply_32x32_rshift32_rounded(x, 2);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("multiply_accumulate_32x32_rshift32_rounded() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = multiply_accumulate_32x32_rshift32_rounded(r, x, 2);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("multiply_subtract_32x32_rshift32_rounded() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = multiply_subtract_32x32_rshift32_rounded(r, x, 2);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("pack_16t_16t() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = pack_16t_16t(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("pack_16t_16b() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = pack_16t_16b(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("pack_16b_16b() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = pack_16b_16b(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("pack_16x16() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = pack_16x16(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("signed_add_16_and_16() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = signed_add_16_and_16(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("signed_multiply_accumulate_32x16b() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = signed_multiply_accumulate_32x16b(r, x, 2);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("signed_multiply_accumulate_32x16t() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = signed_multiply_accumulate_32x16t(r, x, 2);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("logical_and() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = logical_and(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("multiply_16tx16t_add_16bx16b() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = multiply_16tx16t_add_16bx16b(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+
+          
+          time_var2 = micros();
+          local_log.concat("multiply_16tx16b_add_16bx16t() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r += multiply_16tx16b_add_16bx16t(2, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("multiply_16bx16b() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = multiply_16bx16b(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("multiply_16bx16t() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = multiply_16bx16t(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("multiply_16tx16b() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = multiply_16tx16b(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("multiply_16tx16t() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = multiply_16tx16t(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+          time_var2 = micros();
+          local_log.concat("substract_32_saturate() \t  10000 \t ");
+          for (int x = 0; x < 10000; x++) {
+            r = substract_32_saturate(r, x);
+          }
+          local_log.concatf("0x%08x \t %u microseconds\n", r, (unsigned long) (micros() - time_var2));
+          r = 0;
+          
+        local_log.concat("CPU test concluded.\n\n");
+      }
       break;
+
 
     case '6':        // Read so many random integers...
       { // TODO: I don't think the RNG is ever being turned off. Save some power....
