@@ -34,7 +34,7 @@ OUTPUT_PATH        = build
 MCU                = cortex-m4
 CPU_SPEED          = 96000000
 OPTIMIZATION       = -Os
-C_STANDARD         = gnu99
+C_STANDARD         = c99
 CPP_STANDARD       = gnu++11
 FORMAT             = ihex
 
@@ -59,17 +59,19 @@ CFLAGS += $(OPTIMIZATION) -Wall
 CFLAGS += -DF_CPU=$(CPU_SPEED)
 CFLAGS += -mcpu=$(MCU)  -mthumb -D__MK20DX256__
 
-CFLAGS += -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections
-CFLAGS += -mlittle-endian -felide-constructors
+CFLAGS += -fno-exceptions -ffunction-sections -fdata-sections
+CFLAGS += -mlittle-endian 
 CFLAGS += -mfloat-abi=soft
 
 CFLAGS += -DARDUINO=105 -nostdlib -DTEENSYDUINO=117
 
-CFLAGS += -MMD -DUSB_VID=null -DUSB_PID=null
+CFLAGS += -DUSB_VID=null -DUSB_PID=null
+CFLAGS += -DUSB_SERIAL -DLAYOUT_US_ENGLISH
+#CFLAGS += -MMD
 
 
-CPP_FLAGS = -std=$(CPP_STANDARD)
-CPP_FLAGS += -DUSB_SERIAL -DLAYOUT_US_ENGLISH
+CPP_FLAGS = -std=$(CPP_STANDARD) -fno-rtti -felide-constructors
+CPP_FLAGS += $(CFLAGS)
 
 
 
@@ -86,8 +88,6 @@ else
   TARGET_WIDTH =
 endif
 
-
-CFLAGS += $(CPP_FLAGS)
 
 
 ###########################################################################
@@ -124,11 +124,11 @@ all: lib $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
 lib:
 	mkdir -p $(OUTPUT_PATH)
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)libraries/Time/DateStrings.cpp -o $(OUTPUT_PATH)/DateStrings.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)libraries/Time/Time.cpp -o $(OUTPUT_PATH)/Time.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)libraries/SPI/SPI.cpp -o $(OUTPUT_PATH)/SPI.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)libraries/i2c_t3/i2c_t3.cpp -o $(OUTPUT_PATH)/SPI.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)libraries/Encoder/Encoder.cpp -o $(OUTPUT_PATH)/Encoder.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)libraries/Time/DateStrings.cpp -o $(OUTPUT_PATH)/DateStrings.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)libraries/Time/Time.cpp -o $(OUTPUT_PATH)/Time.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)libraries/SPI/SPI.cpp -o $(OUTPUT_PATH)/SPI.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)libraries/i2c_t3/i2c_t3.cpp -o $(OUTPUT_PATH)/SPI.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)libraries/Encoder/Encoder.cpp -o $(OUTPUT_PATH)/Encoder.cpp.o 
 	
 	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/usb_dev.c -o $(OUTPUT_PATH)/usb_dev.c.o
 	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/usb_seremu.c -o $(OUTPUT_PATH)/usb_seremu.c.o 
@@ -146,22 +146,22 @@ lib:
 	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/mk20dx128.c -o $(OUTPUT_PATH)/mk20dx128.c.o 
 	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/touch.c -o $(OUTPUT_PATH)/touch.c.o 
 	$(C_CROSS)   -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/nonstd.c -o $(OUTPUT_PATH)/nonstd.c.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/Print.cpp -o $(OUTPUT_PATH)/Print.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/DMAChannel.cpp -o $(OUTPUT_PATH)/DMAChannel.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/yield.cpp -o $(OUTPUT_PATH)/yield.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/WString.cpp -o $(OUTPUT_PATH)/WString.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/WMath.cpp -o $(OUTPUT_PATH)/WMath.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/usb_inst.cpp -o $(OUTPUT_PATH)/usb_inst.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/Tone.cpp -o $(OUTPUT_PATH)/Tone.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/Stream.cpp -o $(OUTPUT_PATH)/Stream.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/avr_emulation.cpp -o $(OUTPUT_PATH)/avr_emulation.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/new.cpp -o $(OUTPUT_PATH)/new.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/HardwareSerial1.cpp -o $(OUTPUT_PATH)/HardwareSerial1.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/HardwareSerial2.cpp -o $(OUTPUT_PATH)/HardwareSerial2.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/HardwareSerial3.cpp -o $(OUTPUT_PATH)/HardwareSerial3.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/main.cpp -o $(OUTPUT_PATH)/main.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/IntervalTimer.cpp -o $(OUTPUT_PATH)/IntervalTimer.cpp.o 
-	$(CPP_CROSS) -c $(CFLAGS) $(TEENSY_PATH)cores/teensy3/AudioStream.cpp -o $(OUTPUT_PATH)/AudioStream.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/Print.cpp -o $(OUTPUT_PATH)/Print.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/DMAChannel.cpp -o $(OUTPUT_PATH)/DMAChannel.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/yield.cpp -o $(OUTPUT_PATH)/yield.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/WString.cpp -o $(OUTPUT_PATH)/WString.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/WMath.cpp -o $(OUTPUT_PATH)/WMath.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/usb_inst.cpp -o $(OUTPUT_PATH)/usb_inst.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/Tone.cpp -o $(OUTPUT_PATH)/Tone.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/Stream.cpp -o $(OUTPUT_PATH)/Stream.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/avr_emulation.cpp -o $(OUTPUT_PATH)/avr_emulation.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/new.cpp -o $(OUTPUT_PATH)/new.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/HardwareSerial1.cpp -o $(OUTPUT_PATH)/HardwareSerial1.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/HardwareSerial2.cpp -o $(OUTPUT_PATH)/HardwareSerial2.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/HardwareSerial3.cpp -o $(OUTPUT_PATH)/HardwareSerial3.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/main.cpp -o $(OUTPUT_PATH)/main.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/IntervalTimer.cpp -o $(OUTPUT_PATH)/IntervalTimer.cpp.o 
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/AudioStream.cpp -o $(OUTPUT_PATH)/AudioStream.cpp.o 
 
 
 testbench:
@@ -171,7 +171,7 @@ testbench:
 $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf:
 	$(shell mkdir $(OUTPUT_PATH))
 
-	$(CPP_CROSS) -c $(CFLAGS) $(SRCS)
+	$(CPP_CROSS) -c $(CPP_FLAGS) $(SRCS)
 	$(CPP_CROSS) $(OPTIMIZATION) -Wl,--gc-sections -T$(LD_FILE) -mcpu=$(MCU) -mthumb -o $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf $(OUTPUT_PATH)/*.o *.o -L$(OUTPUT_PATH) $(LIBS)
 
 	@echo
