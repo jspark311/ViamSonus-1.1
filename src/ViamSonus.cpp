@@ -51,20 +51,6 @@ int t_hix = 22000;
 float t_timex = 10;
 
 
-  
-  AudioInputAnalog    audioInput;         // audio shield: mic or line-in
-  AudioFilterFIR      myFilterL;
-  AudioFilterFIR      myFilterR;
-
-// Create Audio connections between the components
-// Route audio into the left and right filters
-AudioConnection cf1(audioInput, 0, myFilterL, 0);
-AudioConnection cf2(audioInput, 1, myFilterR, 0);
-// Route the output of the filters to their respective channels
-AudioConnection cf3(myFilterL, 0, audioOutput, 0);
-AudioConnection cf4(myFilterR, 0, audioOutput, 1);
-
-
 
 
 /****************************************************************************************************
@@ -114,7 +100,7 @@ void setup() {
   
   pinMode(14, INPUT);
 
-  AudioMemory(4);
+  AudioMemory(2);
   
   //analogReadRes(BEST_ADC_PRECISION);  // All ADC channels shall be 10-bit.
   analogReadAveraging(32);            // And maximally-smoothed by the hardware (32).

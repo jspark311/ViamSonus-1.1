@@ -32,7 +32,7 @@ OUTPUT_PATH        = build
 
 
 MCU                = cortex-m4
-CPU_SPEED          = 96000000
+CPU_SPEED          = 48000000
 OPTIMIZATION       = -Os
 C_STANDARD         = c99
 CPP_STANDARD       = gnu++11
