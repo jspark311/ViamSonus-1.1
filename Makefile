@@ -3,7 +3,6 @@
 # Author: J. Ian Lindsay
 # Date:   2015.03.06
 #
-#
 ###########################################################################
 
 
@@ -32,9 +31,9 @@ OUTPUT_PATH        = build
 
 
 MCU                = cortex-m4
-CPU_SPEED          = 48000000
+CPU_SPEED          = 96000000
 OPTIMIZATION       = -Os
-C_STANDARD         = c99
+C_STANDARD         = gnu99
 CPP_STANDARD       = gnu++11
 FORMAT             = ihex
 
@@ -45,7 +44,9 @@ FORMAT             = ihex
 INCLUDES     = -iquote. -iquotesrc/ 
 INCLUDES    += -I./ -I$(TEENSY_PATH)libraries -I$(ARDUINO_PATH)/libraries
 INCLUDES    += -I$(TEENSY_PATH)cores/teensy3
-INCLUDES    += -I./ -I$(TEENSY_PATH)libraries/SD
+INCLUDES    += -I./ -Isrc/
+INCLUDES    += -Isrc/FreeRTOS_Arduino/FreeRTOS_ARM/src/
+INCLUDES    += -Isrc/FreeRTOS_Arduino/SdFat/src/
 
 LD_FILE     = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
 
@@ -65,12 +66,18 @@ CFLAGS += -mfloat-abi=soft
 
 CFLAGS += -DARDUINO=105 -nostdlib -DTEENSYDUINO=117
 
-CFLAGS += -DUSB_VID=null -DUSB_PID=null
-CFLAGS += -DUSB_SERIAL -DLAYOUT_US_ENGLISH
-#CFLAGS += -MMD
+CFLAGS += -DUSB_VID=null -DUSB_PID=null -DUSB_SERIAL -DLAYOUT_US_ENGLISH
+
+CPP_FLAGS = -std=$(CPP_STANDARD) 
+CPP_FLAGS += -felide-constructors -fno-exceptions -fno-rtti
 
 
-CPP_FLAGS = -std=$(CPP_STANDARD) -fno-rtti -felide-constructors
+# Options that build for certain threading models (if any).
+MANuVR_OPTIONS += -D__MANUVR_DEBUG
+MANuVR_OPTIONS += -D__MANUVR_FREERTOS
+
+CFLAGS += $(MANuVR_OPTIONS) 
+
 CPP_FLAGS += $(CFLAGS)
 
 
@@ -94,7 +101,7 @@ endif
 # Source file definitions...
 ###########################################################################
 
-MANUVROS_SRCS = src/StringBuilder/*.cpp src/ManuvrOS/*.cpp src/ManuvrOS/XenoSession/*.cpp src/ManuvrOS/ManuvrMsg/*.cpp src/ManuvrOS/Transports/*.cpp
+MANUVROS_SRCS = src/DataStructures/*.cpp src/ManuvrOS/*.cpp src/ManuvrOS/XenoSession/*.cpp src/ManuvrOS/ManuvrMsg/*.cpp src/ManuvrOS/Transports/*.cpp
 SENSOR_SRCS   = src/ManuvrOS/Drivers/SensorWrapper/*.cpp 
 I2C_DRIVERS   = src/ManuvrOS/Drivers/i2c-adapter/*.cpp src/ManuvrOS/Drivers/DeviceWithRegisters/DeviceRegister.cpp src/ManuvrOS/Drivers/DeviceWithRegisters/DeviceWithRegisters.cpp
 
@@ -102,10 +109,22 @@ I2C_VIAM_SONUS_DRIVERS  =  $(I2C_DRIVERS) src/ManuvrOS/Drivers/ISL23345/*.cpp sr
 
 AUDIO_SOURCES = $(TEENSY_PATH)libraries/Audio/*.cpp $(TEENSY_PATH)libraries/Audio/*.c $(TEENSY_PATH)libraries/Audio/utility/*.c
 
-CPP_SRCS  = src/StaticHub/*.cpp $(MANUVROS_SRCS)
-CPP_SRCS += $(SENSOR_SRCS) $(I2C_VIAM_SONUS_DRIVERS)
+CPP_SRCS  = $(MANUVROS_SRCS) $(SENSOR_SRCS) $(I2C_VIAM_SONUS_DRIVERS)
 CPP_SRCS += src/Drivers/ADCScanner/*.cpp src/Drivers/LightSensor/*.cpp
 CPP_SRCS += src/ManuvrOS/Drivers/ManuvrableNeoPixel/*.cpp
+
+FREERTOS_C_SRC     = src/FreeRTOS_Arduino/FreeRTOS_ARM/src/FreeRTOS_ARM.c
+FREERTOS_CPP_SRC  += src/FreeRTOS_Arduino/FreeRTOS_ARM/src/assertMsg.cpp
+FREERTOS_CPP_SRC  += src/FreeRTOS_Arduino/FreeRTOS_ARM/src/basic_io_arm.cpp
+FREERTOS_C_SRC    += src/FreeRTOS_Arduino/FreeRTOS_ARM/src/utility/croutine.c
+FREERTOS_C_SRC    += src/FreeRTOS_Arduino/FreeRTOS_ARM/src/utility/event_groups.c
+FREERTOS_C_SRC    += src/FreeRTOS_Arduino/FreeRTOS_ARM/src/utility/heap_3.c
+FREERTOS_C_SRC    += src/FreeRTOS_Arduino/FreeRTOS_ARM/src/utility/list.c
+FREERTOS_C_SRC    += src/FreeRTOS_Arduino/FreeRTOS_ARM/src/utility/port.c
+FREERTOS_C_SRC    += src/FreeRTOS_Arduino/FreeRTOS_ARM/src/utility/queue.c
+FREERTOS_C_SRC    += src/FreeRTOS_Arduino/FreeRTOS_ARM/src/utility/tasks.c
+FREERTOS_C_SRC    += src/FreeRTOS_Arduino/FreeRTOS_ARM/src/utility/timers.c
+
 
 SRCS   = src/ViamSonus.cpp $(CPP_SRCS) $(AUDIO_SOURCES)
 
@@ -164,10 +183,6 @@ lib:
 	$(CPP_CROSS) -c $(CPP_FLAGS) $(TEENSY_PATH)cores/teensy3/AudioStream.cpp -o $(OUTPUT_PATH)/AudioStream.cpp.o 
 
 
-testbench:
-	g++ -static -g -o testbench src/tests/test-bench.cpp src/tests/StaticHub.cpp $(MANUVROS_SRCS) $(SENSOR_SRCS) $(I2C_DRIVERS) $(I2C_VIAM_SONUS_DRIVERS) -std=$(CPP_STANDARD) $(TARGET_WIDTH) -lstdc++ -lm -Isrc/ -DTEST_BENCH -D_GNU_SOURCE -O0
-
-
 $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf:
 	$(shell mkdir $(OUTPUT_PATH))
 
@@ -186,12 +201,12 @@ program: $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
 
 fullclean:
-	rm -f *.d *.o *.su *~ testbench
+	rm -f *.d *.o *.su *~
 	rm -rf doc/doxygen/*
 	rm -rf $(OUTPUT_PATH)
 
 clean:
-	rm -f *.d *.o *.su *~ testbench
+	rm -f *.d *.o *.su *~
 	rm -rf $(OUTPUT_PATH)
 
 doc:
@@ -200,11 +215,3 @@ doc:
 
 stats:
 	find ./src -type f \( -name \*.cpp -o -name \*.h \) -exec wc -l {} +
-
-
-checkin: fullclean
-	git push
-
-checkout:
-	git pull
-

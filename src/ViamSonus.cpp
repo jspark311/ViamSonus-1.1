@@ -20,17 +20,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
-#include "StaticHub/StaticHub.h"
-#include "Drivers/AudioRouter/AudioRouter.h"
-//#include "ManuvrOS/XenoSession/XenoSession.h"
+#include "FirmwareDefs.h"
+#include <ManuvrOS/Platform/Platform.h>
+#include <ManuvrOS/Kernel.h>
+#include <DataStructures/StringBuilder.h>
 
+#include <ManuvrOS/Drivers/ManuvrableNeoPixel/ManuvrableNeoPixel.h>
+#include <ManuvrOS/Drivers/AudioRouter/AudioRouter.h>
+#include <ManuvrOS/Drivers/LightSensor/LightSensor.h>
+#include <ManuvrOS/Drivers/ADCScanner/ADCScanner.h>
+#include "Encoder/Encoder.h"
+
+//#include <Audio/utility/dspinst.h>
 #include <Audio/Audio.h>
 
-//#include <Adafruit_GFX.h>
-
 #define HOST_BAUD_RATE  115200
+#define NEOPIXEL_PIN  11
 
-
+Kernel* kernel = NULL;
+Encoder* encoder_stack = NULL;;
+    AudioRouter *audio_router = NULL;
+    ManuvrableNeoPixel* strip = NULL;
+    LightSensor* light_sensor = NULL;
+    ADCScanner*  adc_scanner  = NULL;
 
 
 /****************************************************************************************************
@@ -57,14 +69,8 @@ float t_timex = 10;
 * Entry-point for teensy3...                                                                        *
 ****************************************************************************************************/
 
-IntervalTimer timer0;               // Scheduler
-StaticHub*    sh            = NULL;
-Scheduler*    scheduler     = NULL;
-EventManager* event_manager = NULL;
-//XenoSession *sess = NULL;
-
-
-
+int last_touch_read[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+long last_encoder_read = 0;
 
 
 uint8_t analog_write_val = 0;
@@ -85,12 +91,67 @@ void logo_fade() {
 }
 
 
-void timerCallbackScheduler() {  if (scheduler) scheduler->advanceScheduler(); }
+void scan_buttons() {
+  int current_touch_read[12] = {
+    touchRead(0),
+    touchRead(1),
+    touchRead(15),
+    touchRead(16),
+    touchRead(17),
+    touchRead(18),
+    touchRead(19),
+    touchRead(22),
+    touchRead(23),
+    touchRead(25),
+    touchRead(32),
+    touchRead(33)
+  };
+  
+  long current_encoder_read = encoder_stack->read();
+  if (current_encoder_read) {
+    last_encoder_read += current_encoder_read;
+    ManuvrEvent* event = EventManager::returnEvent((current_encoder_read > 0) ? VIAM_SONUS_MSG_ENCODER_UP : VIAM_SONUS_MSG_ENCODER_DOWN);
+    EventManager::staticRaiseEvent(event);
+    StringBuilder local_log;
+    local_log.concatf("Encoder changed. %lu\n", current_encoder_read);
+    StaticHub::log(&local_log);
+  }
+  
+  for (int i = 0; i < 12; i++) {
+    // Real cheesy. Going to look for a doubling until I write calibration code.
+    if (last_touch_read[i] == 0) {
+      // First run. Do nothing.
+    }
+    else if (last_touch_read[i]*2 < current_touch_read[i]) {
+      // BIG rise
+      ManuvrEvent* event = EventManager::returnEvent(MANUVR_MSG_USER_BUTTON_PRESS);
+      event->addArg((uint8_t) i);
+      EventManager::staticRaiseEvent(event);
+      StringBuilder local_log;
+      local_log.concatf("Button %d pressed.\n", i);
+      StaticHub::log(&local_log);
+    }
+    else if (current_touch_read[i]*2 < last_touch_read[i]) {
+      // BIG fall
+      ManuvrEvent* event = EventManager::returnEvent(MANUVR_MSG_USER_BUTTON_RELEASE);
+      event->addArg((uint8_t) i);
+      EventManager::staticRaiseEvent(event);
+      StringBuilder local_log;
+      local_log.concatf("Button %d released.\n", i);
+      StaticHub::log(&local_log);
+    }
+    else {
+      // Steady-state. Nominal case.
+    }
+    last_touch_read[i] = current_touch_read[i];
+  }
+}
+
 
 
 
 void setup() {
-  Serial.begin(HOST_BAUD_RATE);                           // Setup host communication.
+  Serial.begin(HOST_BAUD_RATE);   // USB
   pinMode(13, OUTPUT);
   pinMode(11, OUTPUT);
   pinMode(4,  OUTPUT);
@@ -100,28 +161,51 @@ void setup() {
   
   pinMode(14, INPUT);
 
+  Kernel __kernel;  // Instance the kernel.
+  kernel = &__kernel;
+
   AudioMemory(2);
   
   //analogReadRes(BEST_ADC_PRECISION);  // All ADC channels shall be 10-bit.
   analogReadAveraging(32);            // And maximally-smoothed by the hardware (32).
   analogWriteResolution(12);   // Setup the DAC.
 
-  sh = StaticHub::getInstance();
-  sh->bootstrap();
+  // Setup the first i2c adapter and Subscribe it to Kernel.
+  I2CAdapter i2c(1);
 
-  scheduler     = sh->fetchScheduler();
-  event_manager = sh->fetchEventManager();
-  
-  scheduler->createSchedule(40,  -1, false, logo_fade);
+  __kernel.subscribe((EventReceiver*) &i2c);
 
-  timer0.begin(timerCallbackScheduler, 1000);   // Turn on the periodic interrupts...
+  const uint8_t SWITCH_ADDR = 0x76;
+  const uint8_t POT_0_ADDR  = 0x50;
+  const uint8_t POT_1_ADDR  = 0x51;
+  audio_router = new AudioRouter((I2CAdapter*) i2c, SWITCH_ADDR, POT_0_ADDR, POT_1_ADDR); 
+
+  encoder_stack = new Encoder(2, 3);
+  strip = new ManuvrableNeoPixel(80, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+  light_sensor = new LightSensor();
+  adc_scanner = new ADCScanner();
+  adc_scanner->addADCPin(A10);
+  adc_scanner->addADCPin(A11);
+  adc_scanner->addADCPin(A12);
+  adc_scanner->addADCPin(A13);
+  adc_scanner->addADCPin(A15);
+  adc_scanner->addADCPin(A16);
+  adc_scanner->addADCPin(A17);
+  adc_scanner->addADCPin(A6);
+  adc_scanner->addADCPin(A7);
+  adc_scanner->addADCPin(A20);
+
+  __kernel.subscribe((EventReceiver*) adc_scanner);
+  __kernel.subscribe((EventReceiver*) audio_router);
+  __kernel.subscribe((EventReceiver*) strip);
+  __kernel.subscribe((EventReceiver*) light_sensor);
+
+
+  __kernel.createSchedule(40, -1, false, logo_fade);
+  __kernel.createSchedule(100,  -1, false, scan_buttons);
   
-//  sess = new XenoSession();
-//  sess->markSessionConnected(true);
-  sei();
+  __kernel.bootstrap();
 }
-
-
 
 
 
