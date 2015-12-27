@@ -1,46 +1,3 @@
-<<<<<<< HEAD
-/*
-File:   StaticHub.cpp
-Author: J. Ian Lindsay
-Date:   2014.07.01
-
-
-Copyright (C) 2014 J. Ian Lindsay
-All rights reserved.
-
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-*/
-
-#include "StaticHub/StaticHub.h"
-#include <ManuvrOS/Drivers/i2c-adapter/i2c-adapter.h>
-#include <ManuvrOS/Kernel.h>
-#include <ManuvrOS/XenoSession/XenoSession.h>
-
-#include <Time/Time.h>
-#include <unistd.h>
-
-
-#include <ManuvrOS/Drivers/ManuvrableNeoPixel/ManuvrableNeoPixel.h>
-#include <ManuvrOS/Drivers/AudioRouter/AudioRouter.h>
-#include <ManuvrOS/Drivers/LightSensor/LightSensor.h>
-#include <ManuvrOS/Drivers/ADCScanner/ADCScanner.h>
-#include "Encoder/Encoder.h"
-=======
-
-
 /* AudioRouter functionality */
   #define VIAM_SONUS_MSG_ENABLE_ROUTING        0x9000 // 
   #define VIAM_SONUS_MSG_DISABLE_ROUTING       0x9001 // 
@@ -53,13 +10,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   #define VIAM_SONUS_MSG_PRESERVE_ROUTES       0x9008 // 
   #define VIAM_SONUS_MSG_GROUP_CHANNELS        0x9009 // 
   #define VIAM_SONUS_MSG_UNGROUP_CHANNELS      0x900A // 
->>>>>>> d6b8507cc88effdd611f2a17711f3488b22afab6
-
   #define VIAM_SONUS_MSG_ENCODER_UP            0x9010 // 
   #define VIAM_SONUS_MSG_ENCODER_DOWN          0x9011 // 
   #define VIAM_SONUS_MSG_ADC_SCAN              0x9040 // 
-
-
 
 
 
