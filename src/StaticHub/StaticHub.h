@@ -101,9 +101,8 @@ Initialization order matters a great deal. We should bring classes online in ord
   #define LOG_INFO    6    /* informational */
   #define LOG_DEBUG   7    /* debug-level messages */
 
-  #include <ManuvrOS/Scheduler.h>
-  #include <ManuvrOS/EventManager.h>
-  #include <StringBuilder/StringBuilder.h>
+  #include <ManuvrOS/Kernel.h>
+  
 
 #ifdef ARDUINO
   #include <Arduino.h>

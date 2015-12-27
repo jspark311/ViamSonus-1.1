@@ -20,12 +20,19 @@ This is one of the files that the application author is required to provide. Thi
 *   a microcontroller would want to limit it's counterparty's use of precious RAM. PROTOCOL_MTU, therefore,
 *   determines the effective maximum packet size for this device.
 */
+#define PLATFORM_RNG_CARRY_CAPACITY       10    // How many random numbers should be cached? Must be > 0. 
+
 #define PROTOCOL_MTU              20000                  // See MTU notes above....
 #define VERSION_STRING            "0.1.0"                // We should be able to communicate version so broken behavior can be isolated.
 #define HW_VERSION_STRING         "0"                    // Revision-0 hardwaare (engineering prototype).
 #define IDENTITY_STRING           "ViamSonus"            // Might also be a hash....
-#define EXTENDED_DETAIL_STRING    ""                     // Optional. User-defined.
 #define PROTOCOL_VERSION          0x00000001             // The protocol version we are using.
+
+/*
+* Kernel options.
+*/
+#define EVENT_MANAGER_PREALLOC_COUNT      32    // How large a preallocation buffer should we keep?
+#define MANUVR_PLATFORM_TIMER_PERIOD_MS    1    // What is the granularity of our scheduler?
 
 
 /* AudioRouter functionality */
@@ -46,15 +53,24 @@ This is one of the files that the application author is required to provide. Thi
   #define VIAM_SONUS_MSG_ADC_SCAN              0x9040 // 
 
 
-#ifdef __cplusplus
-extern "C" {
+/****************************************************************************************************
+* Optional fields...                                                                                *
+****************************************************************************************************/
+
+//#define EXTENDED_DETAIL_STRING    ""  // Optional. User-defined.
+
+// We have console support on linux. On a bare-metal build, this would mean that we've designated
+//   a serial port (or some other transport) as a target for plaintext interaction. This is 
+//   typically only useful for debugging firmware.
+// If you don't want console support, comment the line below.
+// NOTE: If your Makefile passes the __MANUVR_DEBUG option, this will be enabled regardless.
+#define __MANUVR_CONSOLE_SUPPORT
+
+// If another Manuverable asks, we will send them semantic definitions for our messages.
+// Comment the line below if your platform is too-small to support these, or you don't intend
+//   your Manuvrable to be used by a human directly.
+#define __ENABLE_MSG_SEMANTICS
+
+
 #endif
 
-volatile void jumpToBootloader(void);
-volatile void reboot(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif

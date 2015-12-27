@@ -20,8 +20,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
-#include "StaticHub/StaticHub.h"
-#include "Drivers/AudioRouter/AudioRouter.h"
+#include <DataStructures/StringBuilder.h>
+#include <ManuvrOS/Drivers/AudioRouter/AudioRouter.h>
 //#include "ManuvrOS/XenoSession/XenoSession.h"
 
 #include <Audio/Audio.h>
@@ -59,8 +59,7 @@ float t_timex = 10;
 
 IntervalTimer timer0;               // Scheduler
 StaticHub*    sh            = NULL;
-Scheduler*    scheduler     = NULL;
-EventManager* event_manager = NULL;
+Kernel*       event_manager = NULL;
 //XenoSession *sess = NULL;
 
 
@@ -85,7 +84,7 @@ void logo_fade() {
 }
 
 
-void timerCallbackScheduler() {  if (scheduler) scheduler->advanceScheduler(); }
+void timerCallbackScheduler() {  event_manager->advanceScheduler(); }
 
 
 
@@ -109,8 +108,7 @@ void setup() {
   sh = StaticHub::getInstance();
   sh->bootstrap();
 
-  scheduler     = sh->fetchScheduler();
-  event_manager = sh->fetchEventManager();
+  event_manager = sh->fetchKernel();
   
   scheduler->createSchedule(40,  -1, false, logo_fade);
 

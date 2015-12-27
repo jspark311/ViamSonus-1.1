@@ -42,7 +42,8 @@ FORMAT             = ihex
 ###########################################################################
 # Source files, includes, and linker directives...
 ###########################################################################
-INCLUDES     = -iquote. -iquotesrc/ 
+INCLUDES     = -iquote. -iquotesrc/
+INCLUDES    += -I./src/
 INCLUDES    += -I./ -I$(TEENSY_PATH)libraries -I$(ARDUINO_PATH)/libraries
 INCLUDES    += -I$(TEENSY_PATH)cores/teensy3
 INCLUDES    += -I./ -I$(TEENSY_PATH)libraries/SD
@@ -94,7 +95,7 @@ endif
 # Source file definitions...
 ###########################################################################
 
-MANUVROS_SRCS = src/StringBuilder/*.cpp src/ManuvrOS/*.cpp src/ManuvrOS/XenoSession/*.cpp src/ManuvrOS/ManuvrMsg/*.cpp src/ManuvrOS/Transports/*.cpp
+MANUVROS_SRCS = src/ManuvrOS/*.cpp src/ManuvrOS/XenoSession/*.cpp src/ManuvrOS/ManuvrMsg/*.cpp src/ManuvrOS/Transports/*.cpp
 SENSOR_SRCS   = src/ManuvrOS/Drivers/SensorWrapper/*.cpp 
 I2C_DRIVERS   = src/ManuvrOS/Drivers/i2c-adapter/*.cpp src/ManuvrOS/Drivers/DeviceWithRegisters/DeviceRegister.cpp src/ManuvrOS/Drivers/DeviceWithRegisters/DeviceWithRegisters.cpp
 
@@ -104,7 +105,7 @@ AUDIO_SOURCES = $(TEENSY_PATH)libraries/Audio/*.cpp $(TEENSY_PATH)libraries/Audi
 
 CPP_SRCS  = src/StaticHub/*.cpp $(MANUVROS_SRCS)
 CPP_SRCS += $(SENSOR_SRCS) $(I2C_VIAM_SONUS_DRIVERS)
-CPP_SRCS += src/Drivers/ADCScanner/*.cpp src/Drivers/LightSensor/*.cpp
+CPP_SRCS += src/ManuvrOS/Drivers/ADCScanner/*.cpp src/ManuvrOS/Drivers/LightSensor/*.cpp
 CPP_SRCS += src/ManuvrOS/Drivers/ManuvrableNeoPixel/*.cpp
 
 SRCS   = src/ViamSonus.cpp $(CPP_SRCS) $(AUDIO_SOURCES)

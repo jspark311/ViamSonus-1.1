@@ -24,18 +24,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include "StaticHub/StaticHub.h"
-#include "ManuvrOS/Drivers/i2c-adapter/i2c-adapter.h"
-#include <ManuvrOS/EventManager.h>
+#include <ManuvrOS/Drivers/i2c-adapter/i2c-adapter.h>
+#include <ManuvrOS/Kernel.h>
 #include <ManuvrOS/XenoSession/XenoSession.h>
 
 #include <Time/Time.h>
 #include <unistd.h>
 
 
-#include "ManuvrOS/Drivers/ManuvrableNeoPixel/ManuvrableNeoPixel.h"
-#include "Drivers/AudioRouter/AudioRouter.h"
-#include "Drivers/LightSensor/LightSensor.h"
-#include "Drivers/ADCScanner/ADCScanner.h"
+#include <ManuvrOS/Drivers/ManuvrableNeoPixel/ManuvrableNeoPixel.h>
+#include <ManuvrOS/Drivers/AudioRouter/AudioRouter.h>
+#include <ManuvrOS/Drivers/LightSensor/LightSensor.h>
+#include <ManuvrOS/Drivers/ADCScanner/ADCScanner.h>
 #include "Encoder/Encoder.h"
 
 //#include <Audio/utility/dspinst.h>
