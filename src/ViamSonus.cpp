@@ -51,17 +51,6 @@ Supported build targets: Teensy3 and Raspi.
 const MessageTypeDef message_defs_viam_sonus[] = {
   {  VIAM_SONUS_MSG_ENCODER_UP            , 0x0000,               "ENCODER_UP",            ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was incremented.
   {  VIAM_SONUS_MSG_ENCODER_DOWN          , 0x0000,               "ENCODER_DOWN",          ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was decremented.
-  {  VIAM_SONUS_MSG_ENABLE_ROUTING        , 0x0000,               "ENABLE_ROUTING",        ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_DISABLE_ROUTING       , 0x0000,               "DISABLE_ROUTING",       ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_NAME_INPUT_CHAN       , 0x0000,               "NAME_INPUT_CHAN",       ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_NAME_OUTPUT_CHAN      , 0x0000,               "NAME_OUTPUT_CHAN",      ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_DUMP_ROUTER           , 0x0000,               "DUMP_ROUTER",           ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_OUTPUT_CHAN_VOL       , 0x0000,               "OUTPUT_CHAN_VOL",       ManuvrMsg::MSG_ARGS_U8_U8 }, // Either takes a global volume, or a volume and a specific channel.
-  {  VIAM_SONUS_MSG_UNROUTE               , 0x0000,               "UNROUTE",               ManuvrMsg::MSG_ARGS_U8   }, // Unroutes the given channel, or all channels.
-  {  VIAM_SONUS_MSG_ROUTE                 , 0x0000,               "ROUTE",                 ManuvrMsg::MSG_ARGS_U8_U8 }, // Routes the input to the output.
-  {  VIAM_SONUS_MSG_PRESERVE_ROUTES       , 0x0000,               "PRESERVE_ROUTES",       ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_GROUP_CHANNELS        , 0x0000,               "GROUP_CHANNELS",        ManuvrMsg::MSG_ARGS_U8_U8 }, // Pass two output channels to group them (stereo).
-  {  VIAM_SONUS_MSG_UNGROUP_CHANNELS      , 0x0000,               "UNGROUP_CHANNELS",      ManuvrMsg::MSG_ARGS_NONE }, // Pass a group ID to free the channels it contains, or no args to ungroup everything.
 
   /* ViamSonus has neopixels and a light-level sensor. */
   {  MANUVR_MSG_NEOPIXEL_REFRESH     , MSG_FLAG_IDEMPOTENT,  "NEOPIXEL_REFRESH"     , ManuvrMsg::MSG_ARGS_NONE }, // Cause any neopixel classes to refresh their strands.
@@ -223,7 +212,7 @@ void loop() {
 
   encoder_stack = new Encoder(2, 3);
   strip = new ManuvrableNeoPixel(80, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-  light_sensor = new LightSensor();
+  light_sensor = new LightSensor(A0);
   adc_scanner = new ADCScanner();
   adc_scanner->addADCPin(A10);
   adc_scanner->addADCPin(A11);
