@@ -57,10 +57,10 @@ INCLUDES    += -I$(TEENSY_PATH)/libraries/Wire
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SD
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SerialFlash
 
-LD_FILE     = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld lib/Audio/memcpy_audio.S
+LD_FILE     = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
 
 # Libraries to link
-LIBS = -lm -lstdc++ -larm_cortexM4l_math -lc -lextras
+LIBS = -lm -lstdc++ -larm_cortexM4l_math -lc -lextras -lmanuvr
 
 # Wrap the include paths into the flags...
 CFLAGS  = $(INCLUDES)
@@ -130,7 +130,7 @@ lib:
 
 $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf:
 	$(CXX) -c $(CPP_FLAGS) $(CPP_SRCS) -std=$(CPP_STANDARD)
-	$(CXX) -Wl,--gc-sections -T$(LD_FILE) -mcpu=$(MCU) -mthumb -o $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf $(OUTPUT_PATH)/*.o *.o -L$(OUTPUT_PATH) $(LIBS)
+	$(CXX) -Wl,--gc-sections -T$(LD_FILE) -mcpu=$(MCU) -mthumb -o $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf *.o -L$(OUTPUT_PATH) $(LIBS)
 
 	@echo
 	@echo $(MSG_FLASH) $@

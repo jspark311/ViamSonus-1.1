@@ -1,56 +1,9 @@
-/* AudioRouter functionality */
-  #define VIAM_SONUS_MSG_ENABLE_ROUTING        0x9000 // 
-  #define VIAM_SONUS_MSG_DISABLE_ROUTING       0x9001 // 
-  #define VIAM_SONUS_MSG_NAME_INPUT_CHAN       0x9002 // 
-  #define VIAM_SONUS_MSG_NAME_OUTPUT_CHAN      0x9003 // 
-  #define VIAM_SONUS_MSG_DUMP_ROUTER           0x9004 // 
-  #define VIAM_SONUS_MSG_OUTPUT_CHAN_VOL       0x9005 // 
-  #define VIAM_SONUS_MSG_UNROUTE               0x9006 // 
-  #define VIAM_SONUS_MSG_ROUTE                 0x9007 // 
-  #define VIAM_SONUS_MSG_PRESERVE_ROUTES       0x9008 // 
-  #define VIAM_SONUS_MSG_GROUP_CHANNELS        0x9009 // 
-  #define VIAM_SONUS_MSG_UNGROUP_CHANNELS      0x900A // 
-  #define VIAM_SONUS_MSG_ENCODER_UP            0x9010 // 
-  #define VIAM_SONUS_MSG_ENCODER_DOWN          0x9011 // 
-  #define VIAM_SONUS_MSG_ADC_SCAN              0x9040 // 
-
-
-
-
-// These are only here until they are migrated to each receiver that deals with them.
-const MessageTypeDef message_defs_viam_sonus[] = {
-  {  VIAM_SONUS_MSG_ADC_SCAN              , MSG_FLAG_IDEMPOTENT,  "ADC_SCAN",              ManuvrMsg::MSG_ARGS_NONE }, // It is time to scan the ADC channels.
-  {  VIAM_SONUS_MSG_ENCODER_UP            , 0x0000,               "ENCODER_UP",            ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was incremented.
-  {  VIAM_SONUS_MSG_ENCODER_DOWN          , 0x0000,               "ENCODER_DOWN",          ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was decremented.
-  {  VIAM_SONUS_MSG_ENABLE_ROUTING        , 0x0000,               "ENABLE_ROUTING",        ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_DISABLE_ROUTING       , 0x0000,               "DISABLE_ROUTING",       ManuvrMsg::MSG_ARGS_NONE }, // 
-  {  VIAM_SONUS_MSG_NAME_INPUT_CHAN       , 0x0000,               "NAME_INPUT_CHAN",       ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_NAME_OUTPUT_CHAN      , 0x0000,               "NAME_OUTPUT_CHAN",      ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_DUMP_ROUTER           , 0x0000,               "DUMP_ROUTER",           ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_OUTPUT_CHAN_VOL       , 0x0000,               "OUTPUT_CHAN_VOL",       ManuvrMsg::MSG_ARGS_U8_U8 }, // Either takes a global volume, or a volume and a specific channel.
-  {  VIAM_SONUS_MSG_UNROUTE               , 0x0000,               "UNROUTE",               ManuvrMsg::MSG_ARGS_U8   }, // Unroutes the given channel, or all channels.
-  {  VIAM_SONUS_MSG_ROUTE                 , 0x0000,               "ROUTE",                 ManuvrMsg::MSG_ARGS_U8_U8 }, // Routes the input to the output.
-  {  VIAM_SONUS_MSG_PRESERVE_ROUTES       , 0x0000,               "PRESERVE_ROUTES",       ManuvrMsg::MSG_ARGS_NONE }, //
-  {  VIAM_SONUS_MSG_GROUP_CHANNELS        , 0x0000,               "GROUP_CHANNELS",        ManuvrMsg::MSG_ARGS_U8_U8 }, // Pass two output channels to group them (stereo).
-  {  VIAM_SONUS_MSG_UNGROUP_CHANNELS      , 0x0000,               "UNGROUP_CHANNELS",      ManuvrMsg::MSG_ARGS_NONE }, // Pass a group ID to free the channels it contains, or no args to ungroup everything.
-  
-  /* ViamSonus has neopixels and a light-level sensor. */
-  {  MANUVR_MSG_NEOPIXEL_REFRESH     , MSG_FLAG_IDEMPOTENT,  "NEOPIXEL_REFRESH"     , ManuvrMsg::MSG_ARGS_NONE }, // Cause any neopixel classes to refresh their strands.
-  {  MANUVR_MSG_DIRTY_FRAME_BUF      , 0x0000,               "DIRTY_FRAME_BUF"      , ManuvrMsg::MSG_ARGS_NONE }, // Something changed the framebuffer and we need to redraw.
-  {  MANUVR_MSG_AMBIENT_LIGHT_LEVEL  , MSG_FLAG_IDEMPOTENT,  "LIGHT_LEVEL"          , ManuvrMsg::MSG_ARGS_U16  }, // Unitless light-level report.
-
-  /* ViamSonus has hardware buttons... */
-  {  MANUVR_MSG_USER_BUTTON_PRESS    , MSG_FLAG_EXPORTABLE,               "USER_BUTTON_PRESS",    ManuvrMsg::MSG_ARGS_U8 },   // The user pushed a button with the given integer code.
-  {  MANUVR_MSG_USER_BUTTON_RELEASE  , MSG_FLAG_EXPORTABLE,               "USER_BUTTON_RELEASE",  ManuvrMsg::MSG_ARGS_U8 },   // The user released a button with the given integer code.
-};
-
-
 
 
 #ifdef __cplusplus
   extern "C" {
     //__attribute__((weak)) omit this as used in _write() in Print.cpp
-  
+
     // this function overrides the one of the same name in Print.cpp
     int _write(int file, char *ptr, int len)
     {
@@ -64,46 +17,11 @@ const MessageTypeDef message_defs_viam_sonus[] = {
 #endif
 
 
-/****************************************************************************************************
- ▄▄▄▄▄▄▄▄▄▄▄  ▄▄        ▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄ 
-▐░░░░░░░░░░░▌▐░░▌      ▐░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌
- ▀▀▀▀█░█▀▀▀▀ ▐░▌░▌     ▐░▌ ▀▀▀▀█░█▀▀▀▀  ▀▀▀▀█░█▀▀▀▀ 
-     ▐░▌     ▐░▌▐░▌    ▐░▌     ▐░▌          ▐░▌     
-     ▐░▌     ▐░▌ ▐░▌   ▐░▌     ▐░▌          ▐░▌     
-     ▐░▌     ▐░▌  ▐░▌  ▐░▌     ▐░▌          ▐░▌     
-     ▐░▌     ▐░▌   ▐░▌ ▐░▌     ▐░▌          ▐░▌     
-     ▐░▌     ▐░▌    ▐░▌▐░▌     ▐░▌          ▐░▌     
- ▄▄▄▄█░█▄▄▄▄ ▐░▌     ▐░▐░▌ ▄▄▄▄█░█▄▄▄▄      ▐░▌     
-▐░░░░░░░░░░░▌▐░▌      ▐░░▌▐░░░░░░░░░░░▌     ▐░▌     
- ▀▀▀▀▀▀▀▀▀▀▀  ▀        ▀▀  ▀▀▀▀▀▀▀▀▀▀▀       ▀     
-
-StaticHub bootstrap and setup fxns. This code is only ever called to initiallize this or that thing,
-  and then becomes inert.
-****************************************************************************************************/
-
-
-/*
-* The primary init function. Calling this will bring the entire system online if everything is
-*   working nominally.
-*/
-int8_t StaticHub::bootstrap() {
-  // One of the first things we need to do is populate the EventManager with all of the
-  // message codes that come with this firmware.
-  int mes_count = sizeof(message_defs_viam_sonus) / sizeof(MessageTypeDef);
-  for (int i = 0; i < mes_count; i++) {
-    ManuvrMsg::message_defs_extended.insert(&message_defs_viam_sonus[i]);
-  }
-
-  return 0;
-}
-
-
-
 int8_t StaticHub::notify(ManuvrEvent *active_event) {
   StringBuilder output;
   int8_t return_value = 0;
   uint32_t temp_uint_32;
-  
+
   switch (active_event->event_code) {
     case MANUVR_MSG_SYS_USB_DISCONNECT:
     case MANUVR_MSG_SYS_USB_SUSPEND:
@@ -118,7 +36,7 @@ int8_t StaticHub::notify(ManuvrEvent *active_event) {
       mute_logger = false;
       return_value++;
       break;
-      
+
     case MANUVR_MSG_USER_BUTTON_PRESS:
       if (active_event->argCount() > 0) {
         uint8_t button;
@@ -212,12 +130,6 @@ int8_t StaticHub::notify(ManuvrEvent *active_event) {
 }
 
 
-
-
-
-
-
-
 void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
   char *str = (char *) input->string();
   char c = *(str);
@@ -226,9 +138,9 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
     temp_byte = atoi((char*) str+1);
   }
   ManuvrEvent *event = NULL;  // Pitching events is a common thing in this fxn...
-  
+
   StringBuilder parse_mule;
-  
+
   switch (c) {
     case 'y':    // Power mode.
       switch (temp_byte) {
@@ -294,17 +206,5 @@ void StaticHub::procDirectDebugInstruction(StringBuilder* input) {
       }
       break;
 
-
-    case 'a':
-      input->cull(1);
-      audio_router->procDirectDebugInstruction(input);
-      break;
-
-    default:
-      break;
   }
-
-  if (local_log.length() > 0) StaticHub::log(&local_log);
-  last_user_input.clear();
 }
-

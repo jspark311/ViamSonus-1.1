@@ -47,4 +47,22 @@ This is where definition of (application or device)-specific parameters ought to
 
 #define MAXIMUM_SEQUENTIAL_SKIPS          20    // How many scheduler skips are we willing to tolerate?
 
+
+
+/* AudioRouter functionality */
+  #define VIAM_SONUS_MSG_ENABLE_ROUTING        0x9000 //
+  #define VIAM_SONUS_MSG_DISABLE_ROUTING       0x9001 //
+  #define VIAM_SONUS_MSG_NAME_INPUT_CHAN       0x9002 //
+  #define VIAM_SONUS_MSG_NAME_OUTPUT_CHAN      0x9003 //
+  #define VIAM_SONUS_MSG_DUMP_ROUTER           0x9004 //
+  #define VIAM_SONUS_MSG_OUTPUT_CHAN_VOL       0x9005 //
+  #define VIAM_SONUS_MSG_UNROUTE               0x9006 //
+  #define VIAM_SONUS_MSG_ROUTE                 0x9007 //
+  #define VIAM_SONUS_MSG_PRESERVE_ROUTES       0x9008 //
+  #define VIAM_SONUS_MSG_GROUP_CHANNELS        0x9009 //
+  #define VIAM_SONUS_MSG_UNGROUP_CHANNELS      0x900A //
+  #define VIAM_SONUS_MSG_ENCODER_UP            0x9010 //
+  #define VIAM_SONUS_MSG_ENCODER_DOWN          0x9011 //
+  #define VIAM_SONUS_MSG_ADC_SCAN              0x9040 //
+
 #endif

@@ -27,22 +27,55 @@ Supported build targets: Teensy3 and Raspi.
 */
 
 #include "FirmwareDefs.h"
-#include <Platform/Platform.h>
-#include <Kernel.h>
 #include <DataStructures/StringBuilder.h>
+#include <Platform/Platform.h>
 
 #include <Drivers/ManuvrableNeoPixel/ManuvrableNeoPixel.h>
 #include <Drivers/AudioRouter/AudioRouter.h>
 #include <Drivers/LightSensor/LightSensor.h>
 #include <Drivers/ADCScanner/ADCScanner.h>
-#include "Encoder/Encoder.h"
+#include <Transports/ManuvrSerial/ManuvrSerial.h>
+#include <XenoSession/Console/ManuvrConsole.h>
 
 //#include <Audio/utility/dspinst.h>
 
 #include <Audio/Audio.h>
+#include "Encoder/Encoder.h"
 
 #define HOST_BAUD_RATE  115200
 #define NEOPIXEL_PIN  11
+
+
+
+// These are only here until they are migrated to each receiver that deals with them.
+const MessageTypeDef message_defs_viam_sonus[] = {
+  {  VIAM_SONUS_MSG_ADC_SCAN              , MSG_FLAG_IDEMPOTENT,  "ADC_SCAN",              ManuvrMsg::MSG_ARGS_NONE }, // It is time to scan the ADC channels.
+  {  VIAM_SONUS_MSG_ENCODER_UP            , 0x0000,               "ENCODER_UP",            ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was incremented.
+  {  VIAM_SONUS_MSG_ENCODER_DOWN          , 0x0000,               "ENCODER_DOWN",          ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was decremented.
+  {  VIAM_SONUS_MSG_ENABLE_ROUTING        , 0x0000,               "ENABLE_ROUTING",        ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_DISABLE_ROUTING       , 0x0000,               "DISABLE_ROUTING",       ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_NAME_INPUT_CHAN       , 0x0000,               "NAME_INPUT_CHAN",       ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_NAME_OUTPUT_CHAN      , 0x0000,               "NAME_OUTPUT_CHAN",      ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_DUMP_ROUTER           , 0x0000,               "DUMP_ROUTER",           ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_OUTPUT_CHAN_VOL       , 0x0000,               "OUTPUT_CHAN_VOL",       ManuvrMsg::MSG_ARGS_U8_U8 }, // Either takes a global volume, or a volume and a specific channel.
+  {  VIAM_SONUS_MSG_UNROUTE               , 0x0000,               "UNROUTE",               ManuvrMsg::MSG_ARGS_U8   }, // Unroutes the given channel, or all channels.
+  {  VIAM_SONUS_MSG_ROUTE                 , 0x0000,               "ROUTE",                 ManuvrMsg::MSG_ARGS_U8_U8 }, // Routes the input to the output.
+  {  VIAM_SONUS_MSG_PRESERVE_ROUTES       , 0x0000,               "PRESERVE_ROUTES",       ManuvrMsg::MSG_ARGS_NONE }, //
+  {  VIAM_SONUS_MSG_GROUP_CHANNELS        , 0x0000,               "GROUP_CHANNELS",        ManuvrMsg::MSG_ARGS_U8_U8 }, // Pass two output channels to group them (stereo).
+  {  VIAM_SONUS_MSG_UNGROUP_CHANNELS      , 0x0000,               "UNGROUP_CHANNELS",      ManuvrMsg::MSG_ARGS_NONE }, // Pass a group ID to free the channels it contains, or no args to ungroup everything.
+
+  /* ViamSonus has neopixels and a light-level sensor. */
+  {  MANUVR_MSG_NEOPIXEL_REFRESH     , MSG_FLAG_IDEMPOTENT,  "NEOPIXEL_REFRESH"     , ManuvrMsg::MSG_ARGS_NONE }, // Cause any neopixel classes to refresh their strands.
+  {  MANUVR_MSG_DIRTY_FRAME_BUF      , 0x0000,               "DIRTY_FRAME_BUF"      , ManuvrMsg::MSG_ARGS_NONE }, // Something changed the framebuffer and we need to redraw.
+  {  MANUVR_MSG_AMBIENT_LIGHT_LEVEL  , MSG_FLAG_IDEMPOTENT,  "LIGHT_LEVEL"          , ManuvrMsg::MSG_ARGS_U16  }, // Unitless light-level report.
+
+  /* ViamSonus has hardware buttons... */
+  {  MANUVR_MSG_USER_BUTTON_PRESS    , MSG_FLAG_EXPORTABLE,  "USER_BUTTON_PRESS",    ManuvrMsg::MSG_ARGS_U8 },   // The user pushed a button with the given integer code.
+  {  MANUVR_MSG_USER_BUTTON_RELEASE  , MSG_FLAG_EXPORTABLE,  "USER_BUTTON_RELEASE",  ManuvrMsg::MSG_ARGS_U8 },   // The user released a button with the given integer code.
+};
+
+
+StringBuilder local_log;
 
 Kernel*             kernel        = NULL;
 Encoder*            encoder_stack = NULL;
@@ -98,8 +131,6 @@ void logo_fade() {
 }
 
 
-void timerCallbackScheduler() {  event_manager->advanceScheduler(); }
-
 void scan_buttons() {
   int current_touch_read[12] = {
     touchRead(0),
@@ -119,11 +150,11 @@ void scan_buttons() {
   long current_encoder_read = encoder_stack->read();
   if (current_encoder_read) {
     last_encoder_read += current_encoder_read;
-    ManuvrEvent* event = EventManager::returnEvent((current_encoder_read > 0) ? VIAM_SONUS_MSG_ENCODER_UP : VIAM_SONUS_MSG_ENCODER_DOWN);
-    EventManager::staticRaiseEvent(event);
-    StringBuilder local_log;
+    ManuvrRunnable* event = Kernel::returnEvent((current_encoder_read > 0) ? VIAM_SONUS_MSG_ENCODER_UP : VIAM_SONUS_MSG_ENCODER_DOWN);
+    Kernel::staticRaiseEvent(event);
+
     local_log.concatf("Encoder changed. %lu\n", current_encoder_read);
-    StaticHub::log(&local_log);
+    Kernel::log(&local_log);
   }
 
   for (int i = 0; i < 12; i++) {
@@ -133,21 +164,21 @@ void scan_buttons() {
     }
     else if (last_touch_read[i]*2 < current_touch_read[i]) {
       // BIG rise
-      ManuvrEvent* event = EventManager::returnEvent(MANUVR_MSG_USER_BUTTON_PRESS);
+      ManuvrRunnable* event = Kernel::returnEvent(MANUVR_MSG_USER_BUTTON_PRESS);
       event->addArg((uint8_t) i);
-      EventManager::staticRaiseEvent(event);
-      StringBuilder local_log;
+      Kernel::staticRaiseEvent(event);
+
       local_log.concatf("Button %d pressed.\n", i);
-      StaticHub::log(&local_log);
+      Kernel::log(&local_log);
     }
     else if (current_touch_read[i]*2 < last_touch_read[i]) {
       // BIG fall
-      ManuvrEvent* event = EventManager::returnEvent(MANUVR_MSG_USER_BUTTON_RELEASE);
+      ManuvrRunnable* event = Kernel::returnEvent(MANUVR_MSG_USER_BUTTON_RELEASE);
       event->addArg((uint8_t) i);
-      EventManager::staticRaiseEvent(event);
-      StringBuilder local_log;
+      Kernel::staticRaiseEvent(event);
+
       local_log.concatf("Button %d released.\n", i);
-      StaticHub::log(&local_log);
+      Kernel::log(&local_log);
     }
     else {
       // Steady-state. Nominal case.
@@ -158,8 +189,17 @@ void scan_buttons() {
 
 
 void setup() {
+  // One of the first things we need to do is populate the EventManager with all of the
+  // message codes that come with this firmware.
+  int mes_count = sizeof(message_defs_viam_sonus) / sizeof(MessageTypeDef);
+  ManuvrMsg::registerMessages(message_defs_viam_sonus, mes_count);
+
   platform.platformPreInit();
   kernel = platform.kernel();
+
+  //analogReadRes(BEST_ADC_PRECISION);  // All ADC channels shall be 10-bit.
+  analogReadAveraging(32);            // And maximally-smoothed by the hardware (32).
+  analogWriteResolution(12);   // Setup the DAC.
 
   gpioDefine(13, OUTPUT);
   gpioDefine(11, OUTPUT);
@@ -167,13 +207,11 @@ void setup() {
   gpioDefine(2,  INPUT_PULLUP);
   gpioDefine(3,  INPUT_PULLUP);
   gpioDefine(14, INPUT);
+}
 
 
+void loop() {
   AudioMemory(2);
-
-  //analogReadRes(BEST_ADC_PRECISION);  // All ADC channels shall be 10-bit.
-  analogReadAveraging(32);            // And maximally-smoothed by the hardware (32).
-  analogWriteResolution(12);   // Setup the DAC.
 
   // Setup the first i2c adapter and Subscribe it to Kernel.
   I2CAdapter i2c(1);
@@ -183,7 +221,7 @@ void setup() {
   const uint8_t SWITCH_ADDR = 0x76;
   const uint8_t POT_0_ADDR  = 0x50;
   const uint8_t POT_1_ADDR  = 0x51;
-  audio_router = new AudioRouter((I2CAdapter*) i2c, SWITCH_ADDR, POT_0_ADDR, POT_1_ADDR);
+  audio_router = new AudioRouter((I2CAdapter*) &i2c, SWITCH_ADDR, POT_0_ADDR, POT_1_ADDR);
 
   encoder_stack = new Encoder(2, 3);
   strip = new ManuvrableNeoPixel(80, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
@@ -208,11 +246,8 @@ void setup() {
   kernel->createSchedule(40, -1, false, logo_fade);
   kernel->createSchedule(100,  -1, false, scan_buttons);
 
-  kernel->bootstrap();
-}
+  platform.bootstrap();
 
-
-void loop() {
   ManuvrSerial  _console_xport("U", HOST_BAUD_RATE);  // Indicate USB.
   kernel->subscribe((EventReceiver*) &_console_xport);
   ManuvrConsole _console((BufferPipe*) &_console_xport);
