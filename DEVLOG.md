@@ -16,3 +16,16 @@ Still unable to build. Not done modernizing...
 
 Hey! I finished, and it's still today (23:33).
 Committing...
+
+------
+
+### 2016.09.04
+Still at it. Cleaning up loose-ends and knocking down TODO's in Manuvr.
+Neopixels behave abnormally. Fixed a serious bug in Teensy3 platform, as well
+  as a few in the Kernel.
+
+     text    data     bss     dec     hex
+    84040    3608    5128   92776   16a68   Current build size with DEBUG and no RTOS.
+    84776    3608    5128   93512   16d48   Extensions to NeoPixel.
+    84768    3608    5128   93504   16d40   Small fixes. About to optimize...
+    84808    3608    5128   93544   16d68   Removal of pointless heap usage.
