@@ -13,3 +13,6 @@ After a long period of neglect, I feel the need to fix ViamSonus and bring it in
 alignment with the last year of changes to Manuvr. Most of this is related to Makefiles
 and build options. But some of Manuvr's drivers were never updated.
 Still unable to build. Not done modernizing...
+
+Hey! I finished, and it's still today (23:33).
+Committing...

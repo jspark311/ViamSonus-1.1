@@ -38,6 +38,7 @@ Supported build targets: Teensy3 and Raspi.
 #include <XenoSession/Console/ManuvrConsole.h>
 
 //#include <Audio/utility/dspinst.h>
+#include "compiler/hardware/teensy/cores/teensy3/arm_math.h"
 
 #include <Audio/Audio.h>
 #include "Encoder/Encoder.h"
@@ -75,19 +76,18 @@ ADCScanner*         adc_scanner   = NULL;
 /****************************************************************************************************
 * Audio test code.                                                                                  *
 ****************************************************************************************************/
-AudioSynthToneSweep myEffect;
-AudioOutputAnalog   audioOutput;
-
-// The tone sweep goes to left and right channels
-AudioConnection c1(myEffect, 0, audioOutput, 0);
-AudioConnection c2(myEffect, 0, audioOutput, 1);
-
-
-float t_ampx = 0.8;
-int t_lox = 10;
-int t_hix = 22000;
-// Length of time for the sweep in seconds
-float t_timex = 10;
+//AudioSynthToneSweep myEffect;
+//AudioOutputAnalog   audioOutput;
+//
+//// The tone sweep goes to left and right channels
+//AudioConnection c1(myEffect, 0, audioOutput, 0);
+//AudioConnection c2(myEffect, 0, audioOutput, 1);
+//
+//float t_ampx = 0.8;
+//int t_lox = 10;
+//int t_hix = 22000;
+//// Length of time for the sweep in seconds
+//float t_timex = 10;
 
 
 

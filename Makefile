@@ -60,7 +60,7 @@ INCLUDES    += -I$(TEENSY_PATH)/libraries/SerialFlash
 LD_FILE     = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
 
 # Libraries to link
-LIBS = -lm -lstdc++ -larm_cortexM4l_math -lc -lextras -lmanuvr
+LIBS = -lm -larm_cortexM4l_math -lmanuvr -lextras
 
 # Wrap the include paths into the flags...
 CFLAGS  = $(INCLUDES)
