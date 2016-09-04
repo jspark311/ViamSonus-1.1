@@ -49,7 +49,6 @@ Supported build targets: Teensy3 and Raspi.
 
 // These are only here until they are migrated to each receiver that deals with them.
 const MessageTypeDef message_defs_viam_sonus[] = {
-  {  VIAM_SONUS_MSG_ADC_SCAN              , MSG_FLAG_IDEMPOTENT,  "ADC_SCAN",              ManuvrMsg::MSG_ARGS_NONE }, // It is time to scan the ADC channels.
   {  VIAM_SONUS_MSG_ENCODER_UP            , 0x0000,               "ENCODER_UP",            ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was incremented.
   {  VIAM_SONUS_MSG_ENCODER_DOWN          , 0x0000,               "ENCODER_DOWN",          ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was decremented.
   {  VIAM_SONUS_MSG_ENABLE_ROUTING        , 0x0000,               "ENABLE_ROUTING",        ManuvrMsg::MSG_ARGS_NONE }, //
@@ -67,7 +66,6 @@ const MessageTypeDef message_defs_viam_sonus[] = {
   /* ViamSonus has neopixels and a light-level sensor. */
   {  MANUVR_MSG_NEOPIXEL_REFRESH     , MSG_FLAG_IDEMPOTENT,  "NEOPIXEL_REFRESH"     , ManuvrMsg::MSG_ARGS_NONE }, // Cause any neopixel classes to refresh their strands.
   {  MANUVR_MSG_DIRTY_FRAME_BUF      , 0x0000,               "DIRTY_FRAME_BUF"      , ManuvrMsg::MSG_ARGS_NONE }, // Something changed the framebuffer and we need to redraw.
-  {  MANUVR_MSG_AMBIENT_LIGHT_LEVEL  , MSG_FLAG_IDEMPOTENT,  "LIGHT_LEVEL"          , ManuvrMsg::MSG_ARGS_U16  }, // Unitless light-level report.
 
   /* ViamSonus has hardware buttons... */
   {  MANUVR_MSG_USER_BUTTON_PRESS    , MSG_FLAG_EXPORTABLE,  "USER_BUTTON_PRESS",    ManuvrMsg::MSG_ARGS_U8 },   // The user pushed a button with the given integer code.

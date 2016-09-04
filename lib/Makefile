@@ -2,7 +2,7 @@
 C_STANDARD      = c99
 CPP_STANDARD    = gnu++11
 
-LOCAL_INCLUDES  =
+LOCAL_INCLUDES  = -Ii2c_t3
 
 LOCAL_C_FLAGS   = $(CFLAGS) $(LOCAL_INCLUDES)
 LOCAL_CXX_FLAGS = $(CPP_FLAGS) $(LOCAL_INCLUDES)
@@ -60,6 +60,7 @@ TEENSY3_CPP_SRC += $(TEENSY_PATH)/libraries/Time/Time.cpp
 TEENSY3_CPP_SRC += $(TEENSY_PATH)/libraries/SPI/SPI.cpp
 TEENSY3_CPP_SRC += $(TEENSY_PATH)/libraries/i2c_t3/i2c_t3.cpp
 TEENSY3_CPP_SRC += $(TEENSY_PATH)/libraries/Encoder/Encoder.cpp
+#TEENSY3_CPP_SRC += i2c_t3/i2c_t3.cpp
 
 TEENSY_AUDIO_C  = Audio/data_ulaw.c
 TEENSY_AUDIO_C += Audio/data_waveforms.c
@@ -113,6 +114,8 @@ TEENSY_AUDIO_CPP += Audio/synth_sine.cpp
 TEENSY_AUDIO_CPP += Audio/synth_tonesweep.cpp
 TEENSY_AUDIO_CPP += Audio/synth_waveform.cpp
 TEENSY_AUDIO_CPP += Audio/synth_whitenoise.cpp
+
+
 
 
 SOURCES_CPP = $(TEENSY3_CPP_SRC) $(TEENSY_AUDIO_CPP)

@@ -63,6 +63,5 @@ This is where definition of (application or device)-specific parameters ought to
   #define VIAM_SONUS_MSG_UNGROUP_CHANNELS      0x900A //
   #define VIAM_SONUS_MSG_ENCODER_UP            0x9010 //
   #define VIAM_SONUS_MSG_ENCODER_DOWN          0x9011 //
-  #define VIAM_SONUS_MSG_ADC_SCAN              0x9040 //
-
+  
 #endif
