@@ -17,18 +17,24 @@ You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
+     __     ___                 ____
+     \ \   / (_) __ _ _ __ ___ / ___|  ___  _ __  _   _ ___
+      \ \ / /| |/ _` | '_ ` _ \\___ \ / _ \| '_ \| | | / __|
+       \ V / | | (_| | | | | | |___) | (_) | | | | |_| \__ \
+        \_/  |_|\__,_|_| |_| |_|____/ \___/|_| |_|\__,_|___/
 
+Supported build targets: Teensy3 and Raspi.
 */
 
 #include "FirmwareDefs.h"
-#include <ManuvrOS/Platform/Platform.h>
-#include <ManuvrOS/Kernel.h>
+#include <Platform/Platform.h>
+#include <Kernel.h>
 #include <DataStructures/StringBuilder.h>
 
-#include <ManuvrOS/Drivers/ManuvrableNeoPixel/ManuvrableNeoPixel.h>
-#include <ManuvrOS/Drivers/AudioRouter/AudioRouter.h>
-#include <ManuvrOS/Drivers/LightSensor/LightSensor.h>
-#include <ManuvrOS/Drivers/ADCScanner/ADCScanner.h>
+#include <Drivers/ManuvrableNeoPixel/ManuvrableNeoPixel.h>
+#include <Drivers/AudioRouter/AudioRouter.h>
+#include <Drivers/LightSensor/LightSensor.h>
+#include <Drivers/ADCScanner/ADCScanner.h>
 #include "Encoder/Encoder.h"
 
 //#include <Audio/utility/dspinst.h>
@@ -38,19 +44,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define HOST_BAUD_RATE  115200
 #define NEOPIXEL_PIN  11
 
-Kernel* kernel = NULL;
-Encoder* encoder_stack = NULL;;
-    AudioRouter *audio_router = NULL;
-    ManuvrableNeoPixel* strip = NULL;
-    LightSensor* light_sensor = NULL;
-    ADCScanner*  adc_scanner  = NULL;
+Kernel*             kernel        = NULL;
+Encoder*            encoder_stack = NULL;
+AudioRouter*        audio_router  = NULL;
+ManuvrableNeoPixel* strip         = NULL;
+LightSensor*        light_sensor  = NULL;
+ADCScanner*         adc_scanner   = NULL;
 
 
 /****************************************************************************************************
 * Audio test code.                                                                                  *
 ****************************************************************************************************/
 AudioSynthToneSweep myEffect;
-AudioOutputAnalog   audioOutput; 
+AudioOutputAnalog   audioOutput;
 
 // The tone sweep goes to left and right channels
 AudioConnection c1(myEffect, 0, audioOutput, 0);
@@ -70,8 +76,6 @@ float t_timex = 10;
 * Entry-point for teensy3...                                                                        *
 ****************************************************************************************************/
 
-IntervalTimer timer0;               // Scheduler
-
 int last_touch_read[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 long last_encoder_read = 0;
 
@@ -83,7 +87,7 @@ void logo_fade() {
   if (direction < 0) analog_write_val--;
   else if (direction > 0) analog_write_val++;
   else return;
-  
+
   if (0 == analog_write_val) {
     direction = direction * -1;
   }
@@ -111,7 +115,7 @@ void scan_buttons() {
     touchRead(32),
     touchRead(33)
   };
-  
+
   long current_encoder_read = encoder_stack->read();
   if (current_encoder_read) {
     last_encoder_read += current_encoder_read;
@@ -121,7 +125,7 @@ void scan_buttons() {
     local_log.concatf("Encoder changed. %lu\n", current_encoder_read);
     StaticHub::log(&local_log);
   }
-  
+
   for (int i = 0; i < 12; i++) {
     // Real cheesy. Going to look for a doubling until I write calibration code.
     if (last_touch_read[i] == 0) {
@@ -154,36 +158,32 @@ void scan_buttons() {
 
 
 void setup() {
-  Serial.begin(HOST_BAUD_RATE);   // USB
-  pinMode(13, OUTPUT);
-  pinMode(11, OUTPUT);
-  pinMode(4,  OUTPUT);
-  
-  pinMode(2, INPUT_PULLUP);
-  pinMode(3, INPUT_PULLUP);
-  
-  pinMode(14, INPUT);
+  platform.platformPreInit();
+  kernel = platform.kernel();
 
-  Kernel __kernel;  // Instance the kernel.
-  kernel = &__kernel;
+  gpioDefine(13, OUTPUT);
+  gpioDefine(11, OUTPUT);
+  gpioDefine(4,  OUTPUT);
+  gpioDefine(2,  INPUT_PULLUP);
+  gpioDefine(3,  INPUT_PULLUP);
+  gpioDefine(14, INPUT);
+
 
   AudioMemory(2);
-  
+
   //analogReadRes(BEST_ADC_PRECISION);  // All ADC channels shall be 10-bit.
   analogReadAveraging(32);            // And maximally-smoothed by the hardware (32).
   analogWriteResolution(12);   // Setup the DAC.
 
-  timer0.begin(timerCallbackScheduler, 1000);   // Turn on the periodic interrupts...
-
   // Setup the first i2c adapter and Subscribe it to Kernel.
   I2CAdapter i2c(1);
 
-  __kernel.subscribe((EventReceiver*) &i2c);
+  kernel->subscribe((EventReceiver*) &i2c);
 
   const uint8_t SWITCH_ADDR = 0x76;
   const uint8_t POT_0_ADDR  = 0x50;
   const uint8_t POT_1_ADDR  = 0x51;
-  audio_router = new AudioRouter((I2CAdapter*) i2c, SWITCH_ADDR, POT_0_ADDR, POT_1_ADDR); 
+  audio_router = new AudioRouter((I2CAdapter*) i2c, SWITCH_ADDR, POT_0_ADDR, POT_1_ADDR);
 
   encoder_stack = new Encoder(2, 3);
   strip = new ManuvrableNeoPixel(80, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
@@ -200,48 +200,34 @@ void setup() {
   adc_scanner->addADCPin(A7);
   adc_scanner->addADCPin(A20);
 
-  __kernel.subscribe((EventReceiver*) adc_scanner);
-  __kernel.subscribe((EventReceiver*) audio_router);
-  __kernel.subscribe((EventReceiver*) strip);
-  __kernel.subscribe((EventReceiver*) light_sensor);
+  kernel->subscribe((EventReceiver*) adc_scanner);
+  kernel->subscribe((EventReceiver*) audio_router);
+  kernel->subscribe((EventReceiver*) strip);
+  kernel->subscribe((EventReceiver*) light_sensor);
 
+  kernel->createSchedule(40, -1, false, logo_fade);
+  kernel->createSchedule(100,  -1, false, scan_buttons);
 
-  __kernel.createSchedule(40, -1, false, logo_fade);
-  __kernel.createSchedule(100,  -1, false, scan_buttons);
-
-  __kernel.bootstrap();
+  kernel->bootstrap();
 }
-
 
 
 void loop() {
-  unsigned char* ser_buffer = (unsigned char*) alloca(255);
-  int bytes_read = 0;
+  ManuvrSerial  _console_xport("U", HOST_BAUD_RATE);  // Indicate USB.
+  kernel->subscribe((EventReceiver*) &_console_xport);
+  ManuvrConsole _console((BufferPipe*) &_console_xport);
+  kernel->subscribe((EventReceiver*) &_console);
 
-  while (1) {   // Service this loop for-ev-ar
-    while (Serial.available() < 1) {
-      event_manager->procIdleFlags();
-      scheduler->serviceScheduledEvents();
-	  
-      if(! myEffect.isPlaying()) {
-        myEffect.play(t_ampx,t_hix,t_lox,t_timex);
-        int temp_x = t_hix;
-        t_hix = t_lox;
-        t_lox = temp_x;
-      }
-    }
-
-    // Zero the buffer.
-    bytes_read = 0;
-    for (int i = 0; i < 255; i++) *(ser_buffer+i) = 0;
-    char c;
-    while (Serial.available()) {
-      c = Serial.read();
-      *(ser_buffer+bytes_read++) = c;
-    }
-
-    sh->feedUSBBuffer(ser_buffer, bytes_read, (c == '\r' || c == '\n'));
-//    sess->bin_stream_rx(ser_buffer, bytes_read);
+  while (1) {
+    kernel->procIdleFlags();
   }
 }
 
+
+#if defined(__MANUVR_LINUX)
+  // For linux builds, we provide a shunt into the loop function.
+  int main(int argc, char *argv[]) {
+    setup();
+    loop();
+  }
+#endif
