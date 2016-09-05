@@ -56,6 +56,7 @@ INCLUDES    += -I$(TEENSY_PATH)/libraries/SPI
 INCLUDES    += -I$(TEENSY_PATH)/libraries/Wire
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SD
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SerialFlash
+INCLUDES    += -I$(WHERE_I_AM)/lib/mbedtls/include/
 
 LD_FILE     = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
 
@@ -82,10 +83,17 @@ CPP_FLAGS  = -felide-constructors -fno-exceptions -fno-rtti
 #MANUVR_OPTIONS += -D__MANUVR_FREERTOS
 MANUVR_OPTIONS += -D__MANUVR_EVENT_PROFILER
 MANUVR_OPTIONS += -D__MANUVR_CONSOLE_SUPPORT
+MANUVR_OPTIONS += -DMANUVR_CBOR
 
 # Options for various security features.
 ifeq ($(SECURE),1)
-export SECURE=1
+## mbedTLS will require this in order to use our chosen options.
+#LIBS += $(OUTPUT_PATH)/libmbedtls.a
+#LIBS += $(OUTPUT_PATH)/libmbedx509.a
+#LIBS += $(OUTPUT_PATH)/libmbedcrypto.a
+#MANUVR_OPTIONS += -D__MANUVR_MBEDTLS
+#export MBEDTLS_CONFIG_FILE = $(WHERE_I_AM)/confs/mbedTLS_conf.h
+#export SECURE=1
 endif
 
 # Debugging options...
@@ -142,9 +150,9 @@ program: $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
 
 clean:
-	rm -f *.d *.o *.su *~
-	rm -rf $(OUTPUT_PATH)
+	rm -f *.d *.o *.su *~ $(OBJS)
 
 fullclean: clean
 	rm -rf doc/doxygen/*
+	rm -rf $(OUTPUT_PATH)
 	$(MAKE) clean -C lib

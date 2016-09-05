@@ -2,10 +2,10 @@
 C_STANDARD      = c99
 CPP_STANDARD    = gnu++11
 
-LOCAL_INCLUDES  = -Ii2c_t3
+LIBS_TO_BUILD  = ManuvrOS/ManuvrOS
+LIBS_TO_COPY   =
 
-LOCAL_C_FLAGS   = $(CFLAGS) $(LOCAL_INCLUDES)
-LOCAL_CXX_FLAGS = $(CPP_FLAGS) $(LOCAL_INCLUDES)
+LOCAL_INCLUDES  = -Ii2c_t3
 
 FREERTOS_C_SRC     = FreeRTOS_Arduino/libraries/FreeRTOS_ARM/src/FreeRTOS_ARM.c
 FREERTOS_C_SRC    += FreeRTOS_Arduino/libraries/FreeRTOS_ARM/src/utility/croutine.c
@@ -36,7 +36,6 @@ TEENSY3_C_SRC += $(TEENSY_PATH)/cores/teensy3/pins_teensy.c
 TEENSY3_C_SRC += $(TEENSY_PATH)/cores/teensy3/mk20dx128.c
 TEENSY3_C_SRC += $(TEENSY_PATH)/cores/teensy3/touch.c
 TEENSY3_C_SRC += $(TEENSY_PATH)/cores/teensy3/nonstd.c
-
 
 TEENSY3_CPP_SRC  = $(TEENSY_PATH)/cores/teensy3/Print.cpp
 TEENSY3_CPP_SRC += $(TEENSY_PATH)/cores/teensy3/DMAChannel.cpp
@@ -115,21 +114,32 @@ TEENSY_AUDIO_CPP += Audio/synth_tonesweep.cpp
 TEENSY_AUDIO_CPP += Audio/synth_waveform.cpp
 TEENSY_AUDIO_CPP += Audio/synth_whitenoise.cpp
 
+SOURCES_CBOR  = cbor-cpp/src/encoder.cpp
+SOURCES_CBOR += cbor-cpp/src/decoder.cpp
+SOURCES_CBOR += cbor-cpp/src/input.cpp
+SOURCES_CBOR += cbor-cpp/src/output_dynamic.cpp
+SOURCES_CBOR += cbor-cpp/src/output_static.cpp
 
 
-
-SOURCES_CPP = $(TEENSY3_CPP_SRC) $(TEENSY_AUDIO_CPP)
+SOURCES_CPP = $(TEENSY3_CPP_SRC) $(TEENSY_AUDIO_CPP) $(SOURCES_CBOR)
 SOURCES_C   = $(TEENSY3_C_SRC) $(TEENSY_AUDIO_C)
 #SOURCES_CPP = $(FREERTOS_CPP_SRC) $(TEENSY3_CPP_SRC)
 #SOURCES_C   = $(FREERTOS_C_SRC) $(TEENSY3_C_SRC)
 
-OBJS  = $(SOURCES_C:.c=.o) $(SOURCES_CPP:.cpp=.o)
 
+ifeq ($(SECURE),1)
+LIBS_TO_BUILD += mbedtls
+LIBS_TO_COPY  += mbedtls/library/*.a
+endif
+
+LOCAL_C_FLAGS   = $(CFLAGS) $(LOCAL_INCLUDES) -nostdlib
+LOCAL_CXX_FLAGS = $(CPP_FLAGS) $(LOCAL_INCLUDES)
+
+OBJS  = $(SOURCES_C:.c=.o) $(SOURCES_CPP:.cpp=.o)
 LIBNAME = libextras.a
 
 
 all: $(LIBNAME)
-	$(MAKE) -C ManuvrOS/ManuvrOS
 
 %.o : %.c
 	$(CC) $(INCLUDES) $(LOCAL_C_FLAGS) -std=$(C_STANDARD) -c $< -o $@
@@ -137,10 +147,16 @@ all: $(LIBNAME)
 %.o : %.cpp
 	$(CXX) $(INCLUDES) $(LOCAL_CXX_FLAGS) -std=$(CPP_STANDARD) -c $< -o $@
 
-$(LIBNAME): $(OBJS)
+$(LIBNAME): externals $(OBJS)
 	$(AR) -rvs $(OUTPUT_PATH)/$@ $(OBJS)
+	#cp -RP $(LIBS_TO_COPY) $(OUTPUT_PATH)
+
+externals:
+	$(MAKE) -C $(LIBS_TO_BUILD)
+	#$(MAKE) -C telehash-c
 
 clean:
 	rm -f $(OBJS)
 	rm -f $(OUTPUT_PATH)/$(LIBNAME)
+	$(MAKE) clean -C mbedtls
 	$(MAKE) clean -C ManuvrOS/ManuvrOS

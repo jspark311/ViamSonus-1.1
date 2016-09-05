@@ -1,0 +1,53 @@
+#ifndef MBEDTLS_CONFIG_H
+#define MBEDTLS_CONFIG_H
+
+#define MBEDTLS_PSK_MAX_LEN    16
+
+//#define MBEDTLS_HAVE_ASM
+#define MBEDTLS_HAVE_TIME
+#define MBEDTLS_HAVE_TIME_DATE
+#define MBEDTLS_DEPRECATED_REMOVED
+
+/* Symmetric cipher block modes. */
+#define MBEDTLS_CIPHER_MODE_CBC
+#define MBEDTLS_CIPHER_MODE_CFB
+#define MBEDTLS_CIPHER_MODE_CTR
+
+#define MBEDTLS_VERSION_FEATURES
+
+/* mbed TLS modules */
+#define MBEDTLS_GENPRIME
+#define MBEDTLS_AESNI_C
+#define MBEDTLS_AES_C
+#define MBEDTLS_BASE64_C
+#define MBEDTLS_BIGNUM_C
+#define MBEDTLS_BLOWFISH_C
+#define MBEDTLS_CAMELLIA_C
+#define MBEDTLS_CCM_C
+#define MBEDTLS_CIPHER_C
+#define MBEDTLS_CTR_DRBG_C
+#define MBEDTLS_ECP_C
+#define MBEDTLS_GCM_C
+#define MBEDTLS_MD_C
+#define MBEDTLS_MD5_C
+
+#define MBEDTLS_NO_PLATFORM_ENTROPY
+#define MBEDTLS_ENTROPY_HARDWARE_ALT
+#define MBEDTLS_ENTROPY_FORCE_SHA256
+
+#define MBEDTLS_PLATFORM_C
+#define MBEDTLS_ENTROPY_C
+
+#define MBEDTLS_RIPEMD160_C
+#define MBEDTLS_SHA1_C
+#define MBEDTLS_SHA256_C
+
+#define MBEDTLS_VERSION_C
+
+
+/* Save RAM at the expense of ROM */
+#define MBEDTLS_AES_ROM_TABLES
+
+#include "mbedtls/check_config.h"
+
+#endif /* MBEDTLS_CONFIG_H */
