@@ -29,3 +29,12 @@ Neopixels behave abnormally. Fixed a serious bug in Teensy3 platform, as well
     84776    3608    5128   93512   16d48   Extensions to NeoPixel.
     84768    3608    5128   93504   16d40   Small fixes. About to optimize...
     84808    3608    5128   93544   16d68   Removal of pointless heap usage.
+    98836    3648    5180  107664   1a490   New baseline after platform upgrades.
+    98820    3648    5180  107648   1a480   Following removal of runtime mes_def length check.
+
+Massive binge in manuvr this weekend. CBOR support was added.
+    98868    3648    5180  107696   1a4b0   CBOR and R/W storage support.
+   100668    3648    5180  109496   1abb8   Adding automatic config loading and config dump.
+
+Calling it a weekend....
+_---J. Ian Lindsay_
