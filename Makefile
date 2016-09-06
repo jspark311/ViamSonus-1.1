@@ -54,6 +54,7 @@ INCLUDES    += -I$(WHERE_I_AM)/lib/FreeRTOS_Arduino/libraries/SdFat/src
 INCLUDES    += -I$(WHERE_I_AM)/lib/Audio/utility
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SPI
 INCLUDES    += -I$(TEENSY_PATH)/libraries/Wire
+INCLUDES    += -I$(TEENSY_PATH)/libraries/EEPROM
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SD
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SerialFlash
 INCLUDES    += -I$(WHERE_I_AM)/lib/mbedtls/include/
@@ -84,6 +85,7 @@ CPP_FLAGS  = -felide-constructors -fno-exceptions -fno-rtti
 MANUVR_OPTIONS += -D__MANUVR_EVENT_PROFILER
 MANUVR_OPTIONS += -D__MANUVR_CONSOLE_SUPPORT
 MANUVR_OPTIONS += -DMANUVR_CBOR
+MANUVR_OPTIONS += -DMANUVR_STORAGE
 
 # Options for various security features.
 ifeq ($(SECURE),1)
