@@ -15,12 +15,6 @@ git clone https://github.com/greiman/FreeRTOS-Arduino lib/FreeRTOS_Arduino
 #rm -rf lib/ManuvrOS
 #git clone https://github.com/jspark311/ManuvrOS lib/ManuvrOS
 
-# CBOR...
-# Note that we do special-handling here to make the build-process smoother...
-rm -rf lib/cbor-cpp
-git clone https://github.com/naphaso/cbor-cpp.git lib/cbor-cpp
-ln -s `pwd`/lib/cbor-cpp/src/ lib/cbor-cpp/include
-
 # mbedTLS...
 rm -rf lib/mbedtls
 git clone https://github.com/ARMmbed/mbedtls.git lib/mbedtls

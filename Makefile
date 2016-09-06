@@ -62,6 +62,7 @@ INCLUDES    += -I$(WHERE_I_AM)/lib/mbedtls/include/
 LD_FILE     = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
 
 # Libraries to link
+# TODO: CBOR-CPP is the _only_ thing requiring the standard library. Rectify...
 LIBS = -lm -larm_cortexM4l_math -lmanuvr -lextras
 
 # Wrap the include paths into the flags...

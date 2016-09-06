@@ -114,14 +114,7 @@ TEENSY_AUDIO_CPP += Audio/synth_tonesweep.cpp
 TEENSY_AUDIO_CPP += Audio/synth_waveform.cpp
 TEENSY_AUDIO_CPP += Audio/synth_whitenoise.cpp
 
-SOURCES_CBOR  = cbor-cpp/src/encoder.cpp
-SOURCES_CBOR += cbor-cpp/src/decoder.cpp
-SOURCES_CBOR += cbor-cpp/src/input.cpp
-SOURCES_CBOR += cbor-cpp/src/output_dynamic.cpp
-SOURCES_CBOR += cbor-cpp/src/output_static.cpp
-
-
-SOURCES_CPP = $(TEENSY3_CPP_SRC) $(TEENSY_AUDIO_CPP) $(SOURCES_CBOR)
+SOURCES_CPP = $(TEENSY3_CPP_SRC) $(TEENSY_AUDIO_CPP)
 SOURCES_C   = $(TEENSY3_C_SRC) $(TEENSY_AUDIO_C)
 #SOURCES_CPP = $(FREERTOS_CPP_SRC) $(TEENSY3_CPP_SRC)
 #SOURCES_C   = $(FREERTOS_C_SRC) $(TEENSY3_C_SRC)
