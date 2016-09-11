@@ -26,7 +26,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 Supported build targets: Teensy3 and Raspi.
 */
 
-#include "FirmwareDefs.h"
 #include <DataStructures/StringBuilder.h>
 #include <Platform/Platform.h>
 
