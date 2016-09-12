@@ -43,6 +43,14 @@ _---J. Ian Lindsay_
 ------
 
 ### 2016.09.10
+    make DEBUG=1
     100668    3648    5180  109496   1abb8   Prior baseline.
     101292    3648    5192  110132   1ae34   Following identity changes in Manuvr.
     101408    3648    5192  110248   1aea8   Following polymorphic platform conversion.
+    101752    3648    5192  110592   1b000   Addition of extra module to be the glue.
+
+Finally lost StaticHub. The last StaticHub.
+
+_---J. Ian Lindsay_
+
+------

@@ -1,5 +1,5 @@
 /*
-File:   ViamSonus.ino
+File:   main.cpp
 Author: J. Ian Lindsay
 Date:   2014.05.19
 
