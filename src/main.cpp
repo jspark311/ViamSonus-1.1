@@ -49,16 +49,16 @@ Supported build targets: Teensy3 and Raspi.
 
 // These are only here until they are migrated to each receiver that deals with them.
 const MessageTypeDef message_defs_viam_sonus[] = {
-  {  VIAM_SONUS_MSG_ENCODER_UP            , 0x0000,               "ENCODER_UP",            ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was incremented.
-  {  VIAM_SONUS_MSG_ENCODER_DOWN          , 0x0000,               "ENCODER_DOWN",          ManuvrMsg::MSG_ARGS_U8 },   // The encoder on the front panel was decremented.
+  {  VIAM_SONUS_MSG_ENCODER_UP       , 0x0000,  "ENCODER_UP",    ManuvrMsg::MSG_ARGS_NONE },   // The encoder on the front panel was incremented.
+  {  VIAM_SONUS_MSG_ENCODER_DOWN     , 0x0000,  "ENCODER_DOWN",  ManuvrMsg::MSG_ARGS_NONE },   // The encoder on the front panel was decremented.
 
   /* ViamSonus has neopixels and a light-level sensor. */
-  {  MANUVR_MSG_NEOPIXEL_REFRESH     , MSG_FLAG_IDEMPOTENT,  "NEOPIXEL_REFRESH"     , ManuvrMsg::MSG_ARGS_NONE }, // Cause any neopixel classes to refresh their strands.
-  {  MANUVR_MSG_DIRTY_FRAME_BUF      , 0x0000,               "DIRTY_FRAME_BUF"      , ManuvrMsg::MSG_ARGS_NONE }, // Something changed the framebuffer and we need to redraw.
+  {  MANUVR_MSG_NEOPIXEL_REFRESH     , 0x0000,  "NEOPIXEL_REFRESH",  ManuvrMsg::MSG_ARGS_NONE }, // Cause any neopixel classes to refresh their strands.
+  {  MANUVR_MSG_DIRTY_FRAME_BUF      , 0x0000,  "DIRTY_FRAME_BUF",   ManuvrMsg::MSG_ARGS_NONE }, // Something changed the framebuffer and we need to redraw.
 
   /* ViamSonus has hardware buttons... */
-  {  MANUVR_MSG_USER_BUTTON_PRESS    , MSG_FLAG_EXPORTABLE,  "USER_BUTTON_PRESS",    ManuvrMsg::MSG_ARGS_U8 },   // The user pushed a button with the given integer code.
-  {  MANUVR_MSG_USER_BUTTON_RELEASE  , MSG_FLAG_EXPORTABLE,  "USER_BUTTON_RELEASE",  ManuvrMsg::MSG_ARGS_U8 },   // The user released a button with the given integer code.
+  {  MANUVR_MSG_USER_BUTTON_PRESS    , MSG_FLAG_EXPORTABLE,  "USER_BUTTON_PRESS",    ManuvrMsg::MSG_ARGS_NONE },   // The user pushed a button with the given integer code.
+  {  MANUVR_MSG_USER_BUTTON_RELEASE  , MSG_FLAG_EXPORTABLE,  "USER_BUTTON_RELEASE",  ManuvrMsg::MSG_ARGS_NONE },   // The user released a button with the given integer code.
 };
 
 

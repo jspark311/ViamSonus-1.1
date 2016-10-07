@@ -83,20 +83,19 @@ CPP_FLAGS  = -felide-constructors -fno-exceptions -fno-rtti
 
 # Options that build for certain threading models (if any).
 #MANUVR_OPTIONS += -D__MANUVR_FREERTOS
-MANUVR_OPTIONS += -D__MANUVR_EVENT_PROFILER
 MANUVR_OPTIONS += -D__MANUVR_CONSOLE_SUPPORT
 MANUVR_OPTIONS += -DMANUVR_CBOR
 MANUVR_OPTIONS += -DMANUVR_STORAGE
 
 # Options for various security features.
 ifeq ($(SECURE),1)
-## mbedTLS will require this in order to use our chosen options.
-#LIBS += $(OUTPUT_PATH)/libmbedtls.a
-#LIBS += $(OUTPUT_PATH)/libmbedx509.a
-#LIBS += $(OUTPUT_PATH)/libmbedcrypto.a
-#MANUVR_OPTIONS += -D__MANUVR_MBEDTLS
-#export MBEDTLS_CONFIG_FILE = $(WHERE_I_AM)/confs/mbedTLS_conf.h
-#export SECURE=1
+MANUVR_OPTIONS += -DWITH_MBEDTLS
+# mbedTLS will require this in order to use our chosen options.
+LIBS += $(OUTPUT_PATH)/libmbedtls.a
+LIBS += $(OUTPUT_PATH)/libmbedx509.a
+LIBS += $(OUTPUT_PATH)/libmbedcrypto.a
+MANUVR_OPTIONS += -DMBEDTLS_CONFIG_FILE='<mbedTLS_conf.h>'
+export SECURE=1
 endif
 
 # Debugging options...
@@ -104,7 +103,7 @@ ifeq ($(DEBUG),1)
 MANUVR_OPTIONS += -D__MANUVR_DEBUG
 #MANUVR_OPTIONS += -D__MANUVR_PIPE_DEBUG
 endif
-
+MANUVR_OPTIONS += -D__MANUVR_EVENT_PROFILER
 
 ###########################################################################
 # Source file definitions...

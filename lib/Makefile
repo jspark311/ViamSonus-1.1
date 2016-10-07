@@ -1,9 +1,8 @@
 # Build all libraries
-C_STANDARD      = c99
+C_STANDARD      = gnu99
 CPP_STANDARD    = gnu++11
 
-LIBS_TO_BUILD  = ManuvrOS/ManuvrOS
-LIBS_TO_COPY   =
+LIBS_TO_BUILD  = libmanuvr.a
 
 LOCAL_INCLUDES  = -Ii2c_t3
 
@@ -121,18 +120,20 @@ SOURCES_C   = $(TEENSY3_C_SRC) $(TEENSY_AUDIO_C)
 
 
 ifeq ($(SECURE),1)
-LIBS_TO_BUILD += mbedtls
-LIBS_TO_COPY  += mbedtls/library/*.a
+	LIBS_TO_BUILD += mbedtls.a
 endif
 
 LOCAL_C_FLAGS   = $(CFLAGS) $(LOCAL_INCLUDES) -nostdlib
 LOCAL_CXX_FLAGS = $(CPP_FLAGS) $(LOCAL_INCLUDES)
 
 OBJS  = $(SOURCES_C:.c=.o) $(SOURCES_CPP:.cpp=.o)
-LIBNAME = libextras.a
 
 
-all: $(LIBNAME)
+.PHONY: all
+
+all: $(LIBS_TO_BUILD) $(OBJS)
+	$(AR) -rvs $(OUTPUT_PATH)/libextras.a $(OBJS)
+	#cp -RP $(LIBS_TO_COPY) $(OUTPUT_PATH)
 
 %.o : %.c
 	$(CC) $(INCLUDES) $(LOCAL_C_FLAGS) -std=$(C_STANDARD) -c $< -o $@
@@ -140,13 +141,18 @@ all: $(LIBNAME)
 %.o : %.cpp
 	$(CXX) $(INCLUDES) $(LOCAL_CXX_FLAGS) -std=$(CPP_STANDARD) -c $< -o $@
 
-$(LIBNAME): externals $(OBJS)
-	$(AR) -rvs $(OUTPUT_PATH)/$@ $(OBJS)
-	#cp -RP $(LIBS_TO_COPY) $(OUTPUT_PATH)
+libmanuvr.a:
+	$(MAKE) -C ManuvrOS/ManuvrOS
 
-externals:
-	$(MAKE) -C $(LIBS_TO_BUILD)
-	#$(MAKE) -C telehash-c
+
+mbedtls.a:
+	@echo '-------------------------------------------'
+	@echo 'Using mbedTLS config file....'
+	@echo $(MBEDTLS_CONFIG_FILE)
+	@echo $(LIBS_TO_BUILD)
+	$(MAKE) lib -C mbedtls
+	cp -RP mbedtls/library/*.a $(OUTPUT_PATH)
+
 
 clean:
 	rm -f $(OBJS)
