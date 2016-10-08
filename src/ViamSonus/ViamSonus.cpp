@@ -90,8 +90,8 @@ ViamSonus::~ViamSonus() {
 *
 * @return 0 on no action, 1 on action, -1 on failure.
 */
-int8_t ViamSonus::bootComplete() {
-  EventReceiver::bootComplete();
+int8_t ViamSonus::attached() {
+  EventReceiver::attached();
   return 1;
 }
 
@@ -166,7 +166,7 @@ void ViamSonus::printDebug(StringBuilder *output) {
 }
 
 
-#if defined(__MANUVR_CONSOLE_SUPPORT)
+#if defined(MANUVR_CONSOLE_SUPPORT)
 void ViamSonus::procDirectDebugInstruction(StringBuilder *input) {
   char* str = input->position(0);
   char c    = *(str);
@@ -179,4 +179,4 @@ void ViamSonus::procDirectDebugInstruction(StringBuilder *input) {
 
   flushLocalLog();
 }
-#endif  // __MANUVR_CONSOLE_SUPPORT
+#endif  // MANUVR_CONSOLE_SUPPORT

@@ -83,7 +83,7 @@ CPP_FLAGS  = -felide-constructors -fno-exceptions -fno-rtti
 
 # Options that build for certain threading models (if any).
 #MANUVR_OPTIONS += -D__MANUVR_FREERTOS
-MANUVR_OPTIONS += -D__MANUVR_CONSOLE_SUPPORT
+MANUVR_OPTIONS += -DMANUVR_CONSOLE_SUPPORT
 MANUVR_OPTIONS += -DMANUVR_CBOR
 MANUVR_OPTIONS += -DMANUVR_STORAGE
 
