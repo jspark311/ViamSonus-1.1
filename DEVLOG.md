@@ -54,3 +54,8 @@ Finally lost StaticHub. The last StaticHub.
 _---J. Ian Lindsay_
 
 ------
+
+### 2016.10.08
+    make DEBUG=1
+    78192    3584    3932   85708   14ecc  Prior to semantic_args excision.
+    78016    3584    3932   85532   14e1c  After semantic_args excision.

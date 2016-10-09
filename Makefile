@@ -21,7 +21,6 @@ export TEENSY_PATH    = $(ARDUINO_PATH)/hardware/teensy/avr/
 ###########################################################################
 # Variables for the firmware compilation...
 ###########################################################################
-WHERE_I_AM         = $(shell pwd)
 TOOLCHAIN          = $(ARDUINO_PATH)/hardware/tools/arm
 TEENSY_LOADER_PATH = $(ARDUINO_PATH)/hardware/tools/teensy_loader_cli
 FORMAT             = ihex
@@ -35,7 +34,8 @@ export SZ      = $(TOOLCHAIN)/bin/arm-none-eabi-size
 export MAKE    = $(shell which make)
 
 # This is where we will store compiled libs and the final output.
-export OUTPUT_PATH  = $(WHERE_I_AM)/build
+export OUTPUT_PATH  = $(BUILD_ROOT)/build
+export BUILD_ROOT   = $(shell pwd)
 
 
 
@@ -46,18 +46,18 @@ INCLUDES     = -iquote. -iquotesrc/
 INCLUDES    += -I./ -Isrc/
 INCLUDES    += -I$(TEENSY_PATH)/libraries -I$(ARDUINO_PATH)/libraries
 INCLUDES    += -I$(TEENSY_PATH)/cores/teensy3
-INCLUDES    += -I$(WHERE_I_AM)/confs
-INCLUDES    += -I$(WHERE_I_AM)/lib/ManuvrOS/ManuvrOS
-INCLUDES    += -I$(WHERE_I_AM)/lib
-INCLUDES    += -I$(WHERE_I_AM)/lib/FreeRTOS_Arduino/libraries/FreeRTOS_ARM/src
-INCLUDES    += -I$(WHERE_I_AM)/lib/FreeRTOS_Arduino/libraries/SdFat/src
-INCLUDES    += -I$(WHERE_I_AM)/lib/Audio/utility
+INCLUDES    += -I$(BUILD_ROOT)/confs
+INCLUDES    += -I$(BUILD_ROOT)/lib/ManuvrOS/ManuvrOS
+INCLUDES    += -I$(BUILD_ROOT)/lib
+INCLUDES    += -I$(BUILD_ROOT)/lib/FreeRTOS_Arduino/libraries/FreeRTOS_ARM/src
+INCLUDES    += -I$(BUILD_ROOT)/lib/FreeRTOS_Arduino/libraries/SdFat/src
+INCLUDES    += -I$(BUILD_ROOT)/lib/Audio/utility
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SPI
 INCLUDES    += -I$(TEENSY_PATH)/libraries/Wire
 INCLUDES    += -I$(TEENSY_PATH)/libraries/EEPROM
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SD
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SerialFlash
-INCLUDES    += -I$(WHERE_I_AM)/lib/mbedtls/include/
+INCLUDES    += -I$(BUILD_ROOT)/lib/mbedtls/include/
 
 LD_FILE     = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
 
