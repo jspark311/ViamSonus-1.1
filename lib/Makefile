@@ -147,8 +147,6 @@ libmanuvr.a:
 
 mbedtls.a:
 	@echo '-------------------------------------------'
-	@echo 'Using mbedTLS config file....'
-	@echo $(MBEDTLS_CONFIG_FILE)
 	@echo $(LIBS_TO_BUILD)
 	$(MAKE) lib -C mbedtls
 	cp -RP mbedtls/library/*.a $(OUTPUT_PATH)

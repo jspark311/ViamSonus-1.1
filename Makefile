@@ -12,15 +12,18 @@ OPTIMIZATION       = -Os
 C_STANDARD         = gnu99
 CPP_STANDARD       = gnu++11
 
+###########################################################################
+# Environmental awareness...
+###########################################################################
 WHO_I_AM       = $(shell whoami)
 HOME_DIRECTORY = /home/$(WHO_I_AM)
 ARDUINO_PATH   = $(HOME_DIRECTORY)/arduino
 export TEENSY_PATH    = $(ARDUINO_PATH)/hardware/teensy/avr/
 
+# This is where we will store compiled libs and the final output.
+export BUILD_ROOT   = $(shell pwd)
+export OUTPUT_PATH  = $(BUILD_ROOT)/build
 
-###########################################################################
-# Variables for the firmware compilation...
-###########################################################################
 TOOLCHAIN          = $(ARDUINO_PATH)/hardware/tools/arm
 TEENSY_LOADER_PATH = $(ARDUINO_PATH)/hardware/tools/teensy_loader_cli
 FORMAT             = ihex
@@ -33,15 +36,13 @@ export OBJCOPY = $(TOOLCHAIN)/bin/arm-none-eabi-objcopy
 export SZ      = $(TOOLCHAIN)/bin/arm-none-eabi-size
 export MAKE    = $(shell which make)
 
-# This is where we will store compiled libs and the final output.
-export OUTPUT_PATH  = $(BUILD_ROOT)/build
-export BUILD_ROOT   = $(shell pwd)
-
-
 
 ###########################################################################
 # Source files, includes, and linker directives...
 ###########################################################################
+CPP_FLAGS          = -fno-rtti -fno-exceptions
+CFLAGS             = -Wall
+
 INCLUDES     = -iquote. -iquotesrc/
 INCLUDES    += -I./ -Isrc/
 INCLUDES    += -I$(TEENSY_PATH)/libraries -I$(ARDUINO_PATH)/libraries
@@ -66,8 +67,7 @@ LD_FILE     = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
 LIBS = -lm -larm_cortexM4l_math -lmanuvr -lextras
 
 # Wrap the include paths into the flags...
-CFLAGS  = $(INCLUDES)
-CFLAGS += -Wall
+CFLAGS += $(INCLUDES)
 
 CFLAGS += -DF_CPU=$(CPU_SPEED)
 CFLAGS += -mcpu=$(MCU)  -mthumb -D__MK20DX256__
@@ -112,8 +112,10 @@ CPP_SRCS  = src/main.cpp src/ViamSonus/ViamSonus.cpp
 
 
 ###########################################################################
-# Rules for building the firmware follow...
+# exports, consolidation....
 ###########################################################################
+OBJS = $(SRCS:.c=.o)
+
 # Merge our choices and export them to the downstream Makefiles...
 CFLAGS += $(MANUVR_OPTIONS) $(OPTIMIZATION)
 
@@ -122,39 +124,33 @@ export CFLAGS
 export CPP_FLAGS  += $(CFLAGS)
 
 
-OBJS = $(SRCS:.c=.o)
+###########################################################################
+# Rules for building the firmware follow...
+###########################################################################
 
+.PHONY:  lib $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
-.PHONY: lib $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
-
-
-all: lib $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
-	$(SZ) $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
-
+all:  lib $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
 lib:
 	mkdir -p $(OUTPUT_PATH)
 	$(MAKE) -C lib
 
-
 $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf:
 	$(CXX) -c $(CPP_FLAGS) $(CPP_SRCS) -std=$(CPP_STANDARD)
 	$(CXX) -Wl,--gc-sections -T$(LD_FILE) -mcpu=$(MCU) -mthumb -o $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf *.o -L$(OUTPUT_PATH) $(LIBS)
-
 	@echo
 	@echo $(MSG_FLASH) $@
 	$(OBJCOPY) -O $(FORMAT) -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf $(OUTPUT_PATH)/$(FIRMWARE_NAME).eep
 	$(OBJCOPY) -O $(FORMAT) -R .eeprom -R .fuse -R .lock -R .signature $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf $(OUTPUT_PATH)/$(FIRMWARE_NAME).hex
-
+	$(SZ) $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
 program: $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 	$(TEENSY_LOADER_PATH) -mmcu=mk20dx128 -w -v $(OUTPUT_PATH)/$(FIRMWARE_NAME).hex
-
 
 clean:
 	rm -f *.d *.o *.su *~ $(OBJS)
 
 fullclean: clean
-	rm -rf doc/doxygen/*
 	rm -rf $(OUTPUT_PATH)
 	$(MAKE) clean -C lib
