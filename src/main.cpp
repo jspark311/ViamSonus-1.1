@@ -136,7 +136,7 @@ void scan_buttons() {
   long current_encoder_read = encoder_stack->read();
   if (current_encoder_read) {
     last_encoder_read += current_encoder_read;
-    ManuvrRunnable* event = Kernel::returnEvent((current_encoder_read > 0) ? VIAM_SONUS_MSG_ENCODER_UP : VIAM_SONUS_MSG_ENCODER_DOWN);
+    ManuvrMsg* event = Kernel::returnEvent((current_encoder_read > 0) ? VIAM_SONUS_MSG_ENCODER_UP : VIAM_SONUS_MSG_ENCODER_DOWN);
     Kernel::staticRaiseEvent(event);
 
     local_log.concatf("Encoder changed. %lu\n", current_encoder_read);
@@ -150,7 +150,7 @@ void scan_buttons() {
     }
     else if (last_touch_read[i]*2 < current_touch_read[i]) {
       // BIG rise
-      ManuvrRunnable* event = Kernel::returnEvent(MANUVR_MSG_USER_BUTTON_PRESS);
+      ManuvrMsg* event = Kernel::returnEvent(MANUVR_MSG_USER_BUTTON_PRESS);
       event->addArg((uint8_t) i);
       Kernel::staticRaiseEvent(event);
 
@@ -159,7 +159,7 @@ void scan_buttons() {
     }
     else if (current_touch_read[i]*2 < last_touch_read[i]) {
       // BIG fall
-      ManuvrRunnable* event = Kernel::returnEvent(MANUVR_MSG_USER_BUTTON_RELEASE);
+      ManuvrMsg* event = Kernel::returnEvent(MANUVR_MSG_USER_BUTTON_RELEASE);
       event->addArg((uint8_t) i);
       Kernel::staticRaiseEvent(event);
 
