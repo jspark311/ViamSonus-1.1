@@ -17,6 +17,8 @@ Still unable to build. Not done modernizing...
 Hey! I finished, and it's still today (23:33).
 Committing...
 
+_---J. Ian Lindsay_
+
 ------
 
 ### 2016.09.04
@@ -56,6 +58,15 @@ _---J. Ian Lindsay_
 ------
 
 ### 2016.10.08
+Security via mbedTLS
+
     make DEBUG=1
     78192    3584    3932   85708   14ecc  Prior to semantic_args excision.
     78016    3584    3932   85532   14e1c  After semantic_args excision.
+
+    169620    3664    8732  182016   2c700 DEBUG=1 SECURE=1 THREADS=1
+    167740    3656    8500  179896   2beb8 DEBUG=1 SECURE=1
+    101616    3632    5116  110364   1af1c DEBUG=1
+    91760     3624    5084  100468   18874 <No qualifiers>
+
+_---J. Ian Lindsay_

@@ -40,52 +40,50 @@ export MAKE    = $(shell which make)
 ###########################################################################
 # Source files, includes, and linker directives...
 ###########################################################################
-CPP_FLAGS          = -fno-rtti -fno-exceptions
-CFLAGS             = -Wall
+CPP_FLAGS    = -felide-constructors -fno-exceptions -fno-rtti
+CFLAGS       = -Wall -nostdlib
+LIBS         = -lm -larm_cortexM4l_math -lmanuvr -lextras
+LD_FILE      = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
 
 INCLUDES     = -iquote. -iquotesrc/
 INCLUDES    += -I./ -Isrc/
 INCLUDES    += -I$(TEENSY_PATH)/libraries -I$(ARDUINO_PATH)/libraries
 INCLUDES    += -I$(TEENSY_PATH)/cores/teensy3
-INCLUDES    += -I$(BUILD_ROOT)/confs
-INCLUDES    += -I$(BUILD_ROOT)/lib/ManuvrOS/ManuvrOS
-INCLUDES    += -I$(BUILD_ROOT)/lib
-INCLUDES    += -I$(BUILD_ROOT)/lib/FreeRTOS_Arduino/libraries/FreeRTOS_ARM/src
-INCLUDES    += -I$(BUILD_ROOT)/lib/FreeRTOS_Arduino/libraries/SdFat/src
-INCLUDES    += -I$(BUILD_ROOT)/lib/Audio/utility
+INCLUDES    += -I$(TEENSY_PATH)/libraries/EEPROM
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SPI
 INCLUDES    += -I$(TEENSY_PATH)/libraries/Wire
-INCLUDES    += -I$(TEENSY_PATH)/libraries/EEPROM
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SD
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SerialFlash
-INCLUDES    += -I$(BUILD_ROOT)/lib/mbedtls/include/
-
-LD_FILE     = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
-
-# Libraries to link
-# TODO: CBOR-CPP is the _only_ thing requiring the standard library. Rectify...
-LIBS = -lm -larm_cortexM4l_math -lmanuvr -lextras
-
-# Wrap the include paths into the flags...
-CFLAGS += $(INCLUDES)
+INCLUDES    += -I$(BUILD_ROOT)/lib/
+INCLUDES    += -I$(BUILD_ROOT)/confs
+INCLUDES    += -I$(BUILD_ROOT)/lib/ManuvrOS/ManuvrOS
+INCLUDES    += -I$(BUILD_ROOT)/lib/Audio/utility
+INCLUDES    += -I$(BUILD_ROOT)/lib/mbedtls/include
 
 CFLAGS += -DF_CPU=$(CPU_SPEED)
 CFLAGS += -mcpu=$(MCU)  -mthumb -D__MK20DX256__
 
-CFLAGS += -fno-exceptions -ffunction-sections -fdata-sections
+CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += -mlittle-endian
 CFLAGS += -mfloat-abi=soft
-CFLAGS += -DARDUINO=105 -nostdlib -DTEENSYDUINO=120
+CFLAGS += -DARDUINO=105 -DTEENSYDUINO=120
 CFLAGS += -DUSB_VID=null -DUSB_PID=null -DUSB_SERIAL -DLAYOUT_US_ENGLISH
 
-CPP_FLAGS  = -felide-constructors -fno-exceptions -fno-rtti
 
+###########################################################################
+# Option conditionals
+###########################################################################
+MANUVR_OPTIONS += -DMANUVR_CONSOLE_SUPPORT
+MANUVR_OPTIONS += -DMANUVR_STORAGE
+MANUVR_OPTIONS += -DMANUVR_CBOR
 
 # Options that build for certain threading models (if any).
-#MANUVR_OPTIONS += -D__MANUVR_FREERTOS
-MANUVR_OPTIONS += -DMANUVR_CONSOLE_SUPPORT
-MANUVR_OPTIONS += -DMANUVR_CBOR
-MANUVR_OPTIONS += -DMANUVR_STORAGE
+ifeq ($(THREADS),1)
+INCLUDES       += -I$(BUILD_ROOT)/lib/FreeRTOS_Arduino/libraries/FreeRTOS_ARM/src
+INCLUDES       += -I$(BUILD_ROOT)/lib/FreeRTOS_Arduino/libraries/SdFat/src
+MANUVR_OPTIONS += -D__MANUVR_FREERTOS
+export THREADS=1
+endif
 
 # Options for various security features.
 ifeq ($(SECURE),1)
@@ -102,22 +100,23 @@ endif
 ifeq ($(DEBUG),1)
 MANUVR_OPTIONS += -D__MANUVR_DEBUG
 #MANUVR_OPTIONS += -D__MANUVR_PIPE_DEBUG
-endif
 MANUVR_OPTIONS += -D__MANUVR_EVENT_PROFILER
+endif
+
 
 ###########################################################################
 # Source file definitions...
 ###########################################################################
-CPP_SRCS  = src/main.cpp src/ViamSonus/ViamSonus.cpp
+SOURCES_CPP  = src/main.cpp src/ViamSonus/ViamSonus.cpp
 
 
 ###########################################################################
 # exports, consolidation....
 ###########################################################################
-OBJS = $(SRCS:.c=.o)
+OBJS  = $(SOURCES_C:.c=.o) $(SOURCES_CPP:.cpp=.o)
 
 # Merge our choices and export them to the downstream Makefiles...
-CFLAGS += $(MANUVR_OPTIONS) $(OPTIMIZATION)
+CFLAGS += $(MANUVR_OPTIONS) $(OPTIMIZATION) $(INCLUDES)
 
 export MANUVR_PLATFORM = TEENSY3
 export CFLAGS
@@ -132,13 +131,18 @@ export CPP_FLAGS  += $(CFLAGS)
 
 all:  lib $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
-lib:
+%.o : %.cpp
+	$(CXX) -std=$(CPP_STANDARD) $(OPTIMIZATION) $(CPP_FLAGS) -c -o $@ $^
+
+%.o : %.c
+	$(CXX) -std=$(CPP_STANDARD) $(OPTIMIZATION) $(CPP_FLAGS) -c -o $@ $^
+
+lib: $(OBJS)
 	mkdir -p $(OUTPUT_PATH)
 	$(MAKE) -C lib
 
 $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf:
-	$(CXX) -c $(CPP_FLAGS) $(CPP_SRCS) -std=$(CPP_STANDARD)
-	$(CXX) -Wl,--gc-sections -T$(LD_FILE) -mcpu=$(MCU) -mthumb -o $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf *.o -L$(OUTPUT_PATH) $(LIBS)
+	$(CXX) $(OBJS) -Wl,--gc-sections -T$(LD_FILE) -mcpu=$(MCU) -mthumb -o $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf -L$(OUTPUT_PATH) $(LIBS)
 	@echo
 	@echo $(MSG_FLASH) $@
 	$(OBJCOPY) -O $(FORMAT) -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf $(OUTPUT_PATH)/$(FIRMWARE_NAME).eep

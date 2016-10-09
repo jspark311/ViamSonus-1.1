@@ -4,16 +4,13 @@
 #   ManuvrOS has been written against. None of this is strictly required for a basic build,
 #   but most real-world applications will want at least one of them.
 
-# Make the lib directory...
-mkdir lib
-
 # FreeRTOS...
 rm -rf lib/FreeRTOS_Arduino
 git clone https://github.com/greiman/FreeRTOS-Arduino lib/FreeRTOS_Arduino
 
 # Manuvr
-#rm -rf lib/ManuvrOS
-#git clone https://github.com/jspark311/ManuvrOS lib/ManuvrOS
+rm -rf lib/ManuvrOS
+git clone https://github.com/jspark311/ManuvrOS lib/ManuvrOS
 
 # mbedTLS...
 rm -rf lib/mbedtls
