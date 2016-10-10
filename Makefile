@@ -151,7 +151,7 @@ $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf:
 	$(OBJCOPY) -O $(FORMAT) -R .eeprom -R .fuse -R .lock -R .signature $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf $(OUTPUT_PATH)/$(FIRMWARE_NAME).hex
 	$(SZ) $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
-program:
+program: $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 	$(TEENSY_LOADER_PATH) -mmcu=mk20dx128 -w -v $(OUTPUT_PATH)/$(FIRMWARE_NAME).hex
 
 clean:
