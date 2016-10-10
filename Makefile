@@ -54,7 +54,7 @@ INCLUDES    += -I$(TEENSY_PATH)/libraries/SPI
 INCLUDES    += -I$(TEENSY_PATH)/libraries/Wire
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SD
 INCLUDES    += -I$(TEENSY_PATH)/libraries/SerialFlash
-INCLUDES    += -I$(BUILD_ROOT)/lib/
+INCLUDES    += -I$(BUILD_ROOT)/lib
 INCLUDES    += -I$(BUILD_ROOT)/confs
 INCLUDES    += -I$(BUILD_ROOT)/lib/ManuvrOS/ManuvrOS
 INCLUDES    += -I$(BUILD_ROOT)/lib/Audio/utility
@@ -89,9 +89,11 @@ endif
 ifeq ($(SECURE),1)
 MANUVR_OPTIONS += -DWITH_MBEDTLS
 # mbedTLS will require this in order to use our chosen options.
+#LIBS  = -lm -larm_cortexM4l_math
 LIBS += $(OUTPUT_PATH)/libmbedtls.a
 LIBS += $(OUTPUT_PATH)/libmbedx509.a
 LIBS += $(OUTPUT_PATH)/libmbedcrypto.a
+#LIBS += -lmanuvr -lextras
 MANUVR_OPTIONS += -DMBEDTLS_CONFIG_FILE='<mbedTLS_conf.h>'
 export SECURE=1
 endif
@@ -149,7 +151,7 @@ $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf:
 	$(OBJCOPY) -O $(FORMAT) -R .eeprom -R .fuse -R .lock -R .signature $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf $(OUTPUT_PATH)/$(FIRMWARE_NAME).hex
 	$(SZ) $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
-program: $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
+program:
 	$(TEENSY_LOADER_PATH) -mmcu=mk20dx128 -w -v $(OUTPUT_PATH)/$(FIRMWARE_NAME).hex
 
 clean:

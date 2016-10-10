@@ -161,11 +161,9 @@ all: $(LIBS_TO_BUILD) $(OBJS)
 libmanuvr.a:
 	$(MAKE) -C ManuvrOS/ManuvrOS
 
-
 mbedtls.a:
 	$(MAKE) lib -C mbedtls
 	cp -RP mbedtls/library/*.a $(OUTPUT_PATH)
-
 
 clean:
 	rm -f $(OBJS)

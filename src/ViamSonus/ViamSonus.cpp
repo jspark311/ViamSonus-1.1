@@ -90,8 +90,10 @@ ViamSonus::~ViamSonus() {
 * @return 0 on no action, 1 on action, -1 on failure.
 */
 int8_t ViamSonus::attached() {
-  EventReceiver::attached();
-  return 1;
+  if (EventReceiver::attached()) {
+    return 1;
+  }
+  return 0;
 }
 
 
