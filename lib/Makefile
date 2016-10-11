@@ -166,7 +166,6 @@ mbedtls.a:
 	cp -RP mbedtls/library/*.a $(OUTPUT_PATH)
 
 clean:
-	rm -f $(OBJS)
-	rm -f $(OUTPUT_PATH)/libextras.a
+	rm -f $(OBJS) $(OUTPUT_PATH)/libextras.a
 	$(MAKE) clean -C mbedtls
 	$(MAKE) clean -C ManuvrOS/ManuvrOS
