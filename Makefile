@@ -137,7 +137,7 @@ all:  lib $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 	$(CXX) -std=$(CPP_STANDARD) $(OPTIMIZATION) $(CPP_FLAGS) -c -o $@ $^
 
 %.o : %.c
-	$(CXX) -std=$(CPP_STANDARD) $(OPTIMIZATION) $(CPP_FLAGS) -c -o $@ $^
+	$(CC) -std=$(C_STANDARD) $(OPTIMIZATION) $(CFLAGS) -c -o $@ $^
 
 lib: $(OBJS)
 	mkdir -p $(OUTPUT_PATH)
