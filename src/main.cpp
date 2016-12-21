@@ -229,10 +229,10 @@ void loop() {
   kernel->subscribe((EventReceiver*) strip);
   kernel->subscribe((EventReceiver*) light_sensor);
 
-  kernel->createSchedule(40, -1, false, logo_fade);
-  kernel->createSchedule(100,  -1, false, scan_buttons);
-
   platform.bootstrap();
+
+  kernel->createSchedule(40, -1, false, logo_fade)->enableSchedule(true);
+  kernel->createSchedule(100,  -1, false, scan_buttons)->enableSchedule(true);
 
   ManuvrSerial  _console_xport("U", HOST_BAUD_RATE);  // Indicate USB.
   kernel->subscribe((EventReceiver*) &_console_xport);
