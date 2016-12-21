@@ -10,3 +10,4 @@ lib/FreeRTOS_Arduino/
 lib/ManuvrOS
 lib/i2c_t3/
 lib/mbedtls/
+tools/
