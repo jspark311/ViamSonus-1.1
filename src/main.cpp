@@ -37,7 +37,7 @@ Supported build targets: Teensy3 and Raspi.
 #include <XenoSession/Console/ManuvrConsole.h>
 
 //#include <Audio/utility/dspinst.h>
-#include "compiler/hardware/teensy/cores/teensy3/arm_math.h"
+#include "arm_math.h"
 
 #include <Audio/Audio.h>
 #include "Encoder/Encoder.h"
