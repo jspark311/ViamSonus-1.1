@@ -62,6 +62,13 @@ const MessageTypeDef message_defs_viam_sonus[] = {
 };
 
 
+const I2CAdapterOptions i2c_opts(
+  1,   // Device number
+  30, // sda
+  29  // scl
+);
+
+
 StringBuilder local_log;
 
 Kernel*             kernel        = NULL;
@@ -200,7 +207,7 @@ void loop() {
   //AudioMemory(2);
 
   // Setup the first i2c adapter and Subscribe it to Kernel.
-  I2CAdapter i2c(1, 30, 29);
+  I2CAdapter i2c(&i2c_opts);
 
   kernel->subscribe((EventReceiver*) &i2c);
 
