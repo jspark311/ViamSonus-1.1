@@ -47,8 +47,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 /**
 * Vanilla constructor.
 */
-ViamSonus::ViamSonus() : EventReceiver() {
-  setReceiverName("ViamSonus");
+ViamSonus::ViamSonus() : EventReceiver("ViamSonus") {
 }
 
 

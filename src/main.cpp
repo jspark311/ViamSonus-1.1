@@ -197,7 +197,7 @@ void setup() {
 
 
 void loop() {
-  AudioMemory(2);
+  //AudioMemory(2);
 
   // Setup the first i2c adapter and Subscribe it to Kernel.
   I2CAdapter i2c(1, 30, 29);
