@@ -40,7 +40,7 @@ export MAKE    = $(shell which make)
 ###########################################################################
 # Source files, includes, and linker directives...
 ###########################################################################
-CPP_FLAGS    = -felide-constructors -fno-exceptions -fno-rtti
+CXXFLAGS    = -felide-constructors -fno-exceptions -fno-rtti
 CFLAGS       = -Wall -nostdlib
 LIBS         = -lm -larm_cortexM4l_math -lmanuvr -lextras
 LD_FILE      = $(TEENSY_PATH)cores/teensy3/mk20dx256.ld
@@ -69,14 +69,11 @@ CFLAGS += -mfloat-abi=soft
 CFLAGS += -DARDUINO=105 -DTEENSYDUINO=120
 CFLAGS += -DUSB_VID=null -DUSB_PID=null -DUSB_SERIAL -DLAYOUT_US_ENGLISH
 
+export MANUVR_PLATFORM = TEENSY3
 
 ###########################################################################
 # Option conditionals
 ###########################################################################
-MANUVR_OPTIONS += -DMANUVR_CONSOLE_SUPPORT
-MANUVR_OPTIONS += -DMANUVR_STORAGE
-MANUVR_OPTIONS += -DMANUVR_CBOR
-MANUVR_OPTIONS += -DMANUVR_SUPPORT_I2C
 
 # Options that build for certain threading models (if any).
 ifeq ($(THREADS),1)
@@ -99,13 +96,6 @@ MANUVR_OPTIONS += -DMBEDTLS_CONFIG_FILE='<mbedTLS_conf.h>'
 export SECURE=1
 endif
 
-# Debugging options...
-ifeq ($(DEBUG),1)
-MANUVR_OPTIONS += -D__MANUVR_DEBUG
-#MANUVR_OPTIONS += -D__MANUVR_PIPE_DEBUG
-MANUVR_OPTIONS += -D__MANUVR_EVENT_PROFILER
-endif
-
 
 ###########################################################################
 # Source file definitions...
@@ -121,9 +111,8 @@ OBJS  = $(SOURCES_C:.c=.o) $(SOURCES_CPP:.cpp=.o)
 # Merge our choices and export them to the downstream Makefiles...
 CFLAGS += $(MANUVR_OPTIONS) $(OPTIMIZATION) $(INCLUDES)
 
-export MANUVR_PLATFORM = TEENSY3
 export CFLAGS
-export CPP_FLAGS  += $(CFLAGS)
+export CXXFLAGS  += $(CFLAGS)
 
 
 ###########################################################################
@@ -135,7 +124,7 @@ export CPP_FLAGS  += $(CFLAGS)
 all:  lib $(OUTPUT_PATH)/$(FIRMWARE_NAME).elf
 
 %.o : %.cpp
-	$(CXX) -std=$(CPP_STANDARD) $(OPTIMIZATION) $(CPP_FLAGS) -c -o $@ $^
+	$(CXX) -std=$(CPP_STANDARD) $(OPTIMIZATION) $(CXXFLAGS) -c -o $@ $^
 
 %.o : %.c
 	$(CC) -std=$(C_STANDARD) $(OPTIMIZATION) $(CFLAGS) -c -o $@ $^

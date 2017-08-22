@@ -26,6 +26,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 Supported build targets: Teensy3 and Raspi.
 */
 
+#include <Audio/Audio.h>
+#include "Encoder/Encoder.h"
+//#include <Audio/utility/dspinst.h>
+#include "arm_math.h"
+
 #include <DataStructures/StringBuilder.h>
 #include <Platform/Platform.h>
 
@@ -35,12 +40,6 @@ Supported build targets: Teensy3 and Raspi.
 #include <Drivers/ADCScanner/ADCScanner.h>
 #include <Transports/ManuvrSerial/ManuvrSerial.h>
 #include <XenoSession/Console/ManuvrConsole.h>
-
-//#include <Audio/utility/dspinst.h>
-#include "arm_math.h"
-
-#include <Audio/Audio.h>
-#include "Encoder/Encoder.h"
 
 #define HOST_BAUD_RATE  115200
 #define NEOPIXEL_PIN  11
@@ -194,12 +193,12 @@ void setup() {
   analogReadAveraging(32);            // And maximally-smoothed by the hardware (32).
   analogWriteResolution(12);   // Setup the DAC.
 
-  gpioDefine(13, OUTPUT);
-  gpioDefine(11, OUTPUT);
-  gpioDefine(4,  OUTPUT);
-  gpioDefine(2,  INPUT_PULLUP);
-  gpioDefine(3,  INPUT_PULLUP);
-  gpioDefine(14, INPUT);
+  gpioDefine(13, GPIOMode::OUTPUT);
+  gpioDefine(11, GPIOMode::OUTPUT);
+  gpioDefine(4,  GPIOMode::OUTPUT);
+  gpioDefine(2,  GPIOMode::INPUT_PULLUP);
+  gpioDefine(3,  GPIOMode::INPUT_PULLUP);
+  gpioDefine(14, GPIOMode::INPUT);
 }
 
 
